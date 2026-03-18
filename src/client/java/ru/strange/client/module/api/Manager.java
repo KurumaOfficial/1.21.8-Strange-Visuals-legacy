@@ -6,10 +6,7 @@ import ru.strange.client.module.impl.interfaces.WaterMark;
 import ru.strange.client.module.impl.other.*;
 import ru.strange.client.module.impl.player.*;
 import ru.strange.client.module.impl.utilities.*;
-import ru.strange.client.module.impl.world.BlockOutline;
-import ru.strange.client.module.impl.world.DashCubes;
-import ru.strange.client.module.impl.world.Svetych;
-import ru.strange.client.module.impl.world.WorldParticles;
+import ru.strange.client.module.impl.world.*;
 
 import java.util.ArrayList;
 import java.util.Comparator;
