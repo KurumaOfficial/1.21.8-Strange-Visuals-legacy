@@ -25,6 +25,7 @@ public class Manager {
         module.add(new NoRender());
         module.add(new AucHelper());
         module.add(new FullBright());
+        module.add(new Optimization());
 
         //Utilities
         module.add(new AutoRun());
@@ -33,6 +34,10 @@ public class Manager {
         module.add(new ItemScroller());
         module.add(new FTHelper());
         module.add(new FreeLook());
+        module.add(new AutoSwap());
+        module.add(new ShiftTap());
+        module.add(new PvPHelper());
+        module.add(new AutoRespawn());
 
         //Player
         module.add(new PlayerParticles());
@@ -48,7 +53,6 @@ public class Manager {
         module.add(new BlockOutline());
         module.add(new JumpCircle());
         module.add(new DashCubes());
-        module.add(new GpsNavigator());
 
         //Interface
         module.add(new WaterMark());

@@ -21,6 +21,7 @@ import ru.strange.client.module.api.IModule;
 import ru.strange.client.module.api.Module;
 import ru.strange.client.module.api.setting.impl.HueSetting;
 import ru.strange.client.module.api.setting.impl.ModeSetting;
+import ru.strange.client.module.api.setting.impl.SliderSetting;
 import ru.strange.client.utils.math.animation.anim.util.Easings;
 import ru.strange.client.utils.math.MathHelper;
 import ru.strange.client.utils.math.Mathf;
@@ -50,11 +51,21 @@ public class TargetESP extends Module {
 
     public static ModeSetting typeCube = new ModeSetting("Режим кубиков","Новый","Новый","Старый").hidden(() -> !typeTargetEsp.is("Кубики"));
     
+    public static SliderSetting imageSize = new SliderSetting("Размер картинки", 1.5f, 0.5f, 3.0f, 0.1f, false).hidden(() -> !typeTargetEsp.is("Картинка"));
+    
+    public static SliderSetting cubeSize = new SliderSetting("Размер кубиков", 0.19f, 0.1f, 0.5f, 0.01f, false).hidden(() -> !typeTargetEsp.is("Кубики") || !typeCube.is("Новый"));
+    
+    public static SliderSetting cubeCount = new SliderSetting("Количество кубиков", 24, 12, 48, 1, false).hidden(() -> !typeTargetEsp.is("Кубики") || !typeCube.is("Новый"));
+    
+    public static SliderSetting oldCubeSize = new SliderSetting("Размер кубиков", 0.12f, 0.05f, 0.3f, 0.01f, false).hidden(() -> !typeTargetEsp.is("Кубики") || !typeCube.is("Старый"));
+    
+    public static SliderSetting oldCubeSpawnRate = new SliderSetting("Скорость спавна", 0.02f, 0.01f, 0.1f, 0.01f, false).hidden(() -> !typeTargetEsp.is("Кубики") || !typeCube.is("Старый"));
+    
     public static HueSetting colorSetting = new HueSetting("Цвет", new Color(131, 166, 232));
 
 
     public TargetESP() {
-        addSettings(typeTargetEsp,typeGhost,typeCube,colorSetting);
+        addSettings(typeTargetEsp,typeGhost,typeCube,imageSize,cubeSize,cubeCount,oldCubeSize,oldCubeSpawnRate,colorSetting);
     }
 
 
@@ -74,7 +85,6 @@ public class TargetESP extends Module {
     private static float oldCubeDeltaTime = 0.0f;
     private static final long OLD_CUBE_LIFE_TIME = 1000L;
     private static final int OLD_CUBE_PARTICLES_PER_SPAWN = 1;
-    private static final float OLD_CUBE_SPAWN_INTERVAL = 0.02f;
     private static final int MAX_PARTICLES = 50; // Лимит частиц для производительности
     private float oldCubeSpawnAccumulator = 0f;
     private static RenderLayer cachedGlowLayer = null;
@@ -171,7 +181,7 @@ public class TargetESP extends Module {
         int redColor = ColorUtil.getColor(200, 70, 70, (int) (255.0F * sizePC));
         int colorS = ColorUtil.overCol(ColorUtil.multAlpha(colorSetting.getRGB(), sizePC), redColor, size.get());
 
-        float size = 1.5F - 0.9F * sizePC + (0.35F - 0.35F * rzs);
+        float size = imageSize.get() - 0.9F * sizePC + (0.35F - 0.35F * rzs);
         matrices.scale(size, size, 1.0f);
 
         RenderLayer renderLayer = RenderLayer.of(
@@ -254,26 +264,34 @@ public class TargetESP extends Module {
 
                 matrices.push();
 
-                double particleX = x + (double) (f3 * Math.sin(f2 + (float) n5));
+                // 3D спиральное движение с глубиной
+                double spiralRadius = f3 * (1.0 + Math.sin(animationNurik * 0.5 + j * 0.3) * 0.2);
+                double particleX = x + (spiralRadius * Math.sin(f2 + (float) n5));
                 double particleY = y + (double) f4 + (double) (0.3F * Math.sin(animationNurik + (float) j * 0.2F)) + (double) (0.2F * (float) i);
-                double particleZ = z + (double) (f3 * Math.cos(f2 - (float) n5));
+                double particleZ = z + (spiralRadius * Math.cos(f2 - (float) n5));
 
                 matrices.translate(particleX, particleY, particleZ);
 
-                float scale =  (0.005F + (float) j / 2000.0F);
+                // Динамический размер с перспективой
+                float depthFactor = (float)(1.0 - (i / (float)n4) * 0.3);
+                float scale = (0.005F + (float) j / 2000.0F) * depthFactor;
                 matrices.scale(scale, scale, scale);
 
+                // Вращение для 3D эффекта
                 matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-camera.getYaw()));
                 matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(camera.getPitch()));
+                matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(animationNurik * 2 + j * 10));
 
                 Matrix4f matrix = matrices.peek().getPositionMatrix();
                 VertexConsumer buffer = immediate.getBuffer(renderLayer);
 
-                int color = baseColor;
+                // Градиент цвета по глубине
+                float depthAlpha = alphaPC * depthFactor;
+                int color = ColorUtil.multAlpha(baseColor, depthAlpha);
                 int r = (color >> 16) & 0xFF;
                 int g = (color >> 8) & 0xFF;
                 int b = color & 0xFF;
-                int a = (int) (alphaPC * 255.0F);
+                int a = (int) (depthAlpha * 255.0F);
 
                 int n7 = -25;
                 int n8 = 50;
@@ -682,7 +700,7 @@ public class TargetESP extends Module {
         Vec3d cameraPos = mc.gameRenderer.getCamera().getPos();
         long time = System.currentTimeMillis();
 
-        int count = 24;
+        int count = (int)cubeCount.get();
         double radius =  0.4 + target.getWidth() / 2 + 0.35F - 0.35F * alpha.get();;
         double heightRange = target.getHeight();
 
@@ -737,7 +755,7 @@ public class TargetESP extends Module {
 
 
             float pulse = 1.0f + 0.15f * (float) Math.sin(time / 400.0 + i * 1.5);
-            float cubeSize = 0.19f * pulse;
+            float cubeSize = this.cubeSize.get() * pulse;
 
             double hurtFactor = atts * (0.5 + 0.5 * Math.sin(i * 123.45));
             if (hurtFactor > 0.05) {
@@ -824,8 +842,9 @@ public class TargetESP extends Module {
         // Спавним новые частицы только когда есть таргет и не превышен лимит
         if (oldCubeParticles.size() < MAX_PARTICLES) {
             oldCubeSpawnAccumulator += oldCubeDeltaTime;
-            while (oldCubeSpawnAccumulator >= OLD_CUBE_SPAWN_INTERVAL && oldCubeParticles.size() < MAX_PARTICLES) {
-                oldCubeSpawnAccumulator -= OLD_CUBE_SPAWN_INTERVAL;
+            float spawnInterval = oldCubeSpawnRate.get();
+            while (oldCubeSpawnAccumulator >= spawnInterval && oldCubeParticles.size() < MAX_PARTICLES) {
+                oldCubeSpawnAccumulator -= spawnInterval;
                 for (int i = 0; i < OLD_CUBE_PARTICLES_PER_SPAWN && oldCubeParticles.size() < MAX_PARTICLES; i++) {
                     double rand = MathHelper.random(0, 360);
                     double x = Math.cos(rand * Math.PI / 180) * 0.7f;
@@ -928,7 +947,7 @@ public class TargetESP extends Module {
             if (animOutput <= 0) return;
 
             float pulse = 1.0f + 0.15f * (float) Math.sin((currentTime - this.getTime()) / 400.0);
-            float cubeSize = 0.12f + 0.04f * animOutput;
+            float cubeSize = oldCubeSize.get() + 0.04f * animOutput;
 
             matrixStack.push();
             matrixStack.translate(posX, posY, posZ);

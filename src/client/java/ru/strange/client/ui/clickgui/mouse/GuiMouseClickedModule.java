@@ -16,13 +16,20 @@ public class GuiMouseClickedModule extends GuiScreen {
 
         float yDown = 0;
         float scrollY = scroll.getScroll();
+        
+        float modulesX = x + 7;
+        float modulesY = y + 64;
+        float modulesHeight = height - 64 - 7;
 
         for (Module module : modules) {
             float up = calcUP(module);
 
-            float drawY = y + 64 + yDown + scrollY;
+            float drawY = modulesY + yDown + scrollY;
+            
+            // Проверяем, что элемент видим в области скролла
+            boolean isVisible = drawY + 26 > modulesY && drawY < modulesY + modulesHeight;
 
-            if (isHovered(mouseX, mouseY, x + 7, drawY, 211, 26)) {
+            if (isVisible && isHovered(mouseX, mouseY, modulesX, drawY, 211, 26)) {
                 if (button == 0) {
                     module.toggle();
                     return true;
@@ -40,7 +47,7 @@ public class GuiMouseClickedModule extends GuiScreen {
                 }
             }
 
-            if (!module.getSettingsForGUI().isEmpty() && module.open) {
+            if (!module.getSettingsForGUI().isEmpty() && module.open && isVisible) {
                 java.util.List<Setting> settings1 = new ArrayList<>();
                 java.util.List<Setting> settings2 = new ArrayList<>();
 
@@ -52,7 +59,7 @@ public class GuiMouseClickedModule extends GuiScreen {
                         settings2.add(setting);
                     }
                 }
-                if (GuiMouseClickedSettings.clickedSettings(settings1, mouseX, mouseY, x + 7, drawY + 26)) {
+                if (GuiMouseClickedSettings.clickedSettings(settings1, mouseX, mouseY, modulesX, drawY + 26)) {
                     return true;
                 }
                 if (GuiMouseClickedSettings.clickedSettings(settings2, mouseX, mouseY, x + 109, drawY + 26)) {

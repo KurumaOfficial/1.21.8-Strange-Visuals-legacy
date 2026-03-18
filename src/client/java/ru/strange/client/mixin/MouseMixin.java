@@ -1,17 +1,19 @@
 package ru.strange.client.mixin;
 
-import net.minecraft.client.Mouse;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Mouse;
+import net.minecraft.client.network.ClientPlayerEntity;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 import ru.strange.client.event.EventManager;
 import ru.strange.client.event.impl.EventLook;
 import ru.strange.client.event.impl.EventMouseInput;
 import ru.strange.client.event.impl.EventMouseScroll;
+import ru.strange.client.utils.other.FreeLookHandler;
 
 @Mixin(Mouse.class)
 public abstract class MouseMixin {
@@ -22,14 +24,11 @@ public abstract class MouseMixin {
             return;
         }
 
-        MinecraftClient mc = MinecraftClient.getInstance();
-
         EventMouseInput event = new EventMouseInput(window, button, action, modifiers);
         EventManager.call(event);
 
         if (event.isCancelled()) {
             ci.cancel();
-            return;
         }
     }
 
@@ -41,24 +40,24 @@ public abstract class MouseMixin {
         EventManager.call(new EventMouseScroll(mouseX, mouseY, horizontalAmount, verticalAmount));
     }
 
-    @Inject(
+    @Redirect(
             method = "updateMouse",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/network/ClientPlayerEntity;changeLookDirection(DD)V"
-            ),
-            locals = LocalCapture.CAPTURE_FAILHARD,
-            cancellable = true
+            )
     )
-    private void onLook(double timeDelta, CallbackInfo ci, double d, double e, double f, double i, double j, int k) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client != null && client.player != null) {
-            EventLook event = new EventLook(d, e * k);
-            EventManager.call(event);
-            if (!event.isCancelled()) {
-                client.player.changeLookDirection(event.yaw, event.pitch);
-            }
-            ci.cancel();
+    private void redirectLook(ClientPlayerEntity player, double yawDelta, double pitchDelta) {
+        EventLook event = new EventLook(yawDelta, pitchDelta);
+        EventManager.call(event);
+
+        if (FreeLookHandler.isActive()) {
+            FreeLookHandler.handleMouse(event.yaw, event.pitch);
+            return;
+        }
+
+        if (!event.isCancelled()) {
+            player.changeLookDirection(event.yaw, event.pitch);
         }
     }
 }

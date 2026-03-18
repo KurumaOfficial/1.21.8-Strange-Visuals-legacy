@@ -140,5 +140,98 @@ public class GuiRenderModule extends GuiScreen {
         scroll.setMax(contentHeight, modulesHeight);
 
         ctx.disableScissor();
+        
+        // Рендерим описание при наведении (поверх всего)
+        renderModuleDescription(ctx, mouseX, mouseY, scrollY, modulesX, modulesY, modulesHeight);
+    }
+    
+    private static float descriptionAlpha = 0f;
+    private static Module lastHoveredModule = null;
+    
+    private static void renderModuleDescription(DrawContext ctx, double mouseX, double mouseY, float scrollY, float modulesX, float modulesY, float modulesHeight) {
+        boolean themea = ThemeManager.getTheme() == Theme.TRANSPARENT_WHITE || ThemeManager.getTheme() == Theme.TRANSPARENT_BLACK || ThemeManager.getTheme() == Theme.PURPLE || ThemeManager.getTheme() == Theme.PINK;
+        
+        Module hoveredModule = null;
+        float yDown = 0;
+        
+        for (Module module : modules) {
+            float up = calcUP(module);
+            float drawY = modulesY + yDown + scrollY;
+            
+            boolean isVisible = drawY + 26 > modulesY && drawY < modulesY + modulesHeight;
+            
+            if (isVisible && isHovered(mouseX, mouseY, modulesX, drawY, 211, 26)) {
+                hoveredModule = module;
+                break;
+            }
+            
+            yDown += 30 + up;
+        }
+        
+        // Плавная анимация появления/исчезновения
+        if (hoveredModule != null && hoveredModule != lastHoveredModule) {
+            descriptionAlpha = 0f;
+        }
+        
+        if (hoveredModule != null) {
+            descriptionAlpha = Math.min(1f, descriptionAlpha + 0.1f);
+        } else {
+            descriptionAlpha = Math.max(0f, descriptionAlpha - 0.15f);
+        }
+        
+        lastHoveredModule = hoveredModule;
+        
+        if (descriptionAlpha > 0.01f && hoveredModule != null && !hoveredModule.description.isEmpty()) {
+            String description = hoveredModule.description;
+            float descWidth = FontDraw.getWidth(FontDraw.FontType.MEDIUM, description, 6) + 12;
+            float descHeight = 20;
+            
+            float descX = (float)mouseX + 10;
+            float descY = (float)mouseY - descHeight - 5;
+            
+            // Проверяем границы экрана
+            if (descX + descWidth > mc.getWindow().getScaledWidth()) {
+                descX = (float)mouseX - descWidth - 10;
+            }
+            if (descY < 0) {
+                descY = (float)mouseY + 10;
+            }
+            
+            int bgAlpha = (int)(180 * descriptionAlpha);
+            int borderAlpha = (int)(120 * descriptionAlpha);
+            int textAlpha = (int)(255 * descriptionAlpha);
+            
+            RenderUtil.Round.draw(
+                ctx,
+                descX,
+                descY,
+                descWidth,
+                descHeight,
+                4f,
+                themea ? RenderUtil.ColorUtil.replAlpha(RenderUtil.ColorUtil.getBackGroundColor(1,1), bgAlpha) : 
+                        RenderUtil.ColorUtil.replAlpha(new Color(20, 20, 20).getRGB(), bgAlpha)
+            );
+            
+            RenderUtil.Border.draw(
+                ctx,
+                descX,
+                descY,
+                descWidth,
+                descHeight,
+                4f,
+                0.5f,
+                RenderUtil.ColorUtil.replAlpha(RenderUtil.ColorUtil.getMainColor(1, 1), borderAlpha)
+            );
+            
+            FontDraw.drawText(
+                FontDraw.FontType.MEDIUM,
+                ctx,
+                description,
+                descX + 6,
+                descY + 12,
+                6,
+                RenderUtil.ColorUtil.replAlpha(RenderUtil.ColorUtil.getTextColor(1,1), textAlpha)
+            );
+        }
     }
 }

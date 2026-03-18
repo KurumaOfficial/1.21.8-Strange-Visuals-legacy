@@ -14,25 +14,24 @@ public class GuiMouseClickedTheme extends GuiScreen {
     public static boolean clickedTheme(double mouseX, double mouseY) {
         if (selectedCategories != Category.Theme) return false;
 
-        float startXLeft = x + 7;
-        float startXRight = x + 7 + 110;
+        float startX = x + 7;
         float startY = y + 64;
-
-        float yDown = 0;
+        float cardWidth = 102;
+        float cardHeight = 26;
+        float spacing = 8;
+        float columnSpacing = 8;
 
         for (int index = 0; index < themes.length; index++) {
             Theme theme = themes[index];
-            boolean leftColumn = index % 2 == 0;
-            float drawX = leftColumn ? startXLeft : startXRight;
-            float drawY = startY + yDown;
+            int row = index / 2;
+            int col = index % 2;
+            
+            float drawX = startX + col * (cardWidth + columnSpacing);
+            float drawY = startY + row * (cardHeight + spacing);
 
-            if (isHovered(mouseX, mouseY, drawX, drawY, 102, 26)) {
+            if (isHovered(mouseX, mouseY, drawX, drawY, cardWidth, cardHeight)) {
                 ThemeManager.setTheme(theme);
                 return true;
-            }
-
-            if (!leftColumn) {
-                yDown += 26 + 4;
             }
         }
         return false;

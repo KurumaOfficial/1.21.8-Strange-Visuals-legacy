@@ -23,7 +23,7 @@ public final class ConfigManager extends Manager<Config> {
     private static File getConfigDirectory() {
         if (IS_LINUX) {
             String homeDir = System.getProperty("user.home");
-            return new File(homeDir, ".strangevisuals" + File.separator + "configs" + File.separator + "cfg");
+            return new File(homeDir, ".strangevisual" + File.separator + "configs" + File.separator + "cfg");
         } else {
             return new File(Strange.root, "configs" + File.separator + "cfg");
         }

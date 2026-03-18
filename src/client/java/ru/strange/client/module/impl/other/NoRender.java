@@ -17,7 +17,9 @@ public class NoRender extends Module {
     public static MultiBooleanSetting settings = new MultiBooleanSetting(
             "Настройки",
             new BooleanSetting("Убрать огонь", true),
-            new BooleanSetting("Убрать тряску", false)
+            new BooleanSetting("Убрать тряску", true),
+            new BooleanSetting("Убрать тыкву", true),
+            new BooleanSetting("Убрать портал", false)
     );
 
     public NoRender() {

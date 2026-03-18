@@ -23,12 +23,11 @@ import ru.strange.client.module.api.Module;
 import ru.strange.client.module.api.setting.impl.BooleanSetting;
 import ru.strange.client.module.api.setting.impl.HueSetting;
 import ru.strange.client.module.api.setting.impl.ModeSetting;
+import ru.strange.client.module.api.setting.impl.SliderSetting;
 import ru.strange.client.utils.render.RenderUtil;
 
 import java.awt.*;
 import java.util.OptionalDouble;
-
-import static ru.strange.client.utils.render.RenderUtil.*;
 
 @IModule(
         name = "Китайская шляпа",
@@ -39,10 +38,29 @@ import static ru.strange.client.utils.render.RenderUtil.*;
 public class Hat extends Module {
 
     private static final int BUFFER_SIZE = 1 << 16;
-    public static HueSetting colorSetting = new HueSetting("Цвет", new Color(131, 166, 232));
+
+    public ModeSetting colorMode = new ModeSetting("Цвет", "Один цвет", "Один цвет", "Два цвета");
+    public HueSetting color1 = new HueSetting("Цвет 1", new Color(131, 166, 232));
+    public HueSetting color2 = new HueSetting("Цвет 2", new Color(232, 131, 166)).hidden(() -> !colorMode.is("Два цвета"));
+
+    // вместо "Прозрачность" теперь понятная альфа
+    public SliderSetting alpha = new SliderSetting("Альфа", 255, 0, 255, 5, false);
+
+    public SliderSetting segments = new SliderSetting("Сегменты", 120, 60, 240, 10, false);
+    public SliderSetting height = new SliderSetting("Высота", 0.25f, 0.1f, 0.5f, 0.01f, false);
+    public SliderSetting radius = new SliderSetting("Ширина", 0.55f, 0.3f, 1.0f, 0.05f, false);
+
+    public BooleanSetting outline = new BooleanSetting("Контур", true);
+    public SliderSetting outlineWidth = new SliderSetting("Толщина контура", 2.5f, 1.0f, 5.0f, 0.5f, false).hidden(() -> !outline.get());
+
+    public BooleanSetting rotate = new BooleanSetting("Вращение", true).hidden(() -> !colorMode.is("Два цвета"));
+    public SliderSetting rotationSpeed = new SliderSetting("Скорость вращения", 1.0f, 0.1f, 5.0f, 0.1f, false)
+            .hidden(() -> !rotate.get() || !colorMode.is("Два цвета"));
+
+    private float rotationAngle = 0f;
 
     public Hat() {
-        addSettings(colorSetting);
+        addSettings(colorMode, color1, color2, alpha, segments, height, radius, outline, outlineWidth, rotate, rotationSpeed);
     }
 
     @EventInit
@@ -68,8 +86,13 @@ public class Hat extends Module {
             matrices.push();
             matrices.translate(x - cameraPos.x, hatY - cameraPos.y, z - cameraPos.z);
 
-            Matrix4f matrix = matrices.peek().getPositionMatrix();
+            if (colorMode.is("Два цвета") && rotate.get()) {
+                rotationAngle += rotationSpeed.get() * 0.5f;
+                if (rotationAngle >= 360f) rotationAngle -= 360f;
+                matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(rotationAngle));
+            }
 
+            Matrix4f matrix = matrices.peek().getPositionMatrix();
             renderChinaHat(immediate, matrix);
 
             matrices.pop();
@@ -80,70 +103,110 @@ public class Hat extends Module {
     }
 
     private void renderChinaHat(VertexConsumerProvider.Immediate immediate, Matrix4f matrix) {
-        int segments = 120;
-        float radius = 0.55f;
-        float height = 0.25f;
-        float alpha = 180 / 255f;
+        int segmentCount = (int) segments.get();
+        float hatRadius = radius.get();
+        float hatHeight = height.get();
+        int alphaValue = (int) alpha.get();
 
-        VertexConsumer fillBuffer = immediate.getBuffer(getHatFillLayer());
+        if (alphaValue <= 0 && !outline.get()) return;
 
-        for (int i = 0; i < segments; i++) {
-            float angle1 = (float) Math.toRadians(i * (360.0 / segments));
-            float angle2 = (float) Math.toRadians((i + 1) * (360.0 / segments));
+        VertexConsumer fillBuffer = immediate.getBuffer(getHatFillLayer(alphaValue));
 
-            int c1 = ColorUtil.multAlpha(colorSetting.getRGB(), alpha);
-            int c2 = ColorUtil.multAlpha(colorSetting.getRGB(), alpha);
+        for (int i = 0; i < segmentCount; i++) {
+            float angle1 = (float) Math.toRadians(i * (360.0 / segmentCount));
+            float angle2 = (float) Math.toRadians((i + 1) * (360.0 / segmentCount));
 
-            fillBuffer.vertex(matrix, 0, height, 0).color(c1);
-            fillBuffer.vertex(matrix, (float)Math.cos(angle1) * radius, 0, (float)Math.sin(angle1) * radius).color(c1);
-            fillBuffer.vertex(matrix, (float)Math.cos(angle2) * radius, 0, (float)Math.sin(angle2) * radius).color(c2);
+            int edgeColor1 = getSegmentColor(i, segmentCount, alphaValue);
+            int edgeColor2 = getSegmentColor(i + 1, segmentCount, alphaValue);
+            int centerColor = getCenterColor(alphaValue);
+
+            fillBuffer.vertex(matrix, 0, hatHeight, 0).color(centerColor);
+            fillBuffer.vertex(matrix, (float) Math.cos(angle1) * hatRadius, 0, (float) Math.sin(angle1) * hatRadius).color(edgeColor1);
+            fillBuffer.vertex(matrix, (float) Math.cos(angle2) * hatRadius, 0, (float) Math.sin(angle2) * hatRadius).color(edgeColor2);
         }
 
-        VertexConsumer lineBuffer = immediate.getBuffer(getHatLineLayer());
-        int lineCol = ColorUtil.replAlpha(ColorUtil.fade(), 255);
+        if (outline.get()) {
+            VertexConsumer lineBuffer = immediate.getBuffer(getHatLineLayer(alphaValue));
 
-        for (int i = 0; i < segments; i++) {
-            float angle1 = (float) Math.toRadians(i * (360.0 / segments));
-            float angle2 = (float) Math.toRadians((i + 1) * (360.0 / segments));
+            for (int i = 0; i < segmentCount; i++) {
+                float angle1 = (float) Math.toRadians(i * (360.0 / segmentCount));
+                float angle2 = (float) Math.toRadians((i + 1) * (360.0 / segmentCount));
 
-            lineBuffer.vertex(matrix, (float)Math.cos(angle1) * radius, 0, (float)Math.sin(angle1) * radius).color(lineCol);
-            lineBuffer.vertex(matrix, (float)Math.cos(angle2) * radius, 0, (float)Math.sin(angle2) * radius).color(lineCol);
+                int lineColor1 = getSegmentColor(i, segmentCount, Math.max(alphaValue, 40));
+                int lineColor2 = getSegmentColor(i + 1, segmentCount, Math.max(alphaValue, 40));
+
+                lineBuffer.vertex(matrix, (float) Math.cos(angle1) * hatRadius, 0, (float) Math.sin(angle1) * hatRadius).color(lineColor1);
+                lineBuffer.vertex(matrix, (float) Math.cos(angle2) * hatRadius, 0, (float) Math.sin(angle2) * hatRadius).color(lineColor2);
+            }
         }
     }
-    private static final RenderPipeline HAT_FILL_PIPELINE = RenderPipelines.register(
+
+    private int getSegmentColor(int index, int segmentCount, int alphaValue) {
+        if (colorMode.is("Один цвет")) {
+            return RenderUtil.ColorUtil.replAlpha(color1.getRGB(), alphaValue);
+        }
+
+        float percent = (index / (float) segmentCount) * 100f;
+        int block = (int) (percent / 10f) % 2;
+        int rgb = block == 0 ? color1.getRGB() : color2.getRGB();
+        return RenderUtil.ColorUtil.replAlpha(rgb, alphaValue);
+    }
+
+    private int getCenterColor(int alphaValue) {
+        if (colorMode.is("Один цвет")) {
+            return RenderUtil.ColorUtil.replAlpha(color1.getRGB(), alphaValue);
+        }
+
+        int mixed = RenderUtil.ColorUtil.interpolateColor(color1.getRGB(), color2.getRGB(), 0.5f);
+        return RenderUtil.ColorUtil.replAlpha(mixed, alphaValue);
+    }
+
+    private static final RenderPipeline HAT_FILL_OPAQUE_PIPELINE = RenderPipelines.register(
             RenderPipeline.builder(RenderPipelines.POSITION_COLOR_SNIPPET)
-                    .withLocation(Identifier.of("strange", "hat_fill"))
+                    .withLocation(Identifier.of("strange", "hat_fill_opaque"))
                     .withVertexFormat(VertexFormats.POSITION_COLOR, VertexFormat.DrawMode.TRIANGLES)
                     .withCull(false)
                     .withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
-                    .withDepthWrite(false)
-                    .withBlend(BlendFunction.LIGHTNING)
+                    .withDepthWrite(true)
                     .build()
     );
 
-    private static RenderPipeline HAT_LINE_PIPELINE = RenderPipelines.register(
+    private static final RenderPipeline HAT_FILL_TRANSPARENT_PIPELINE = RenderPipelines.register(
+            RenderPipeline.builder(RenderPipelines.POSITION_COLOR_SNIPPET)
+                    .withLocation(Identifier.of("strange", "hat_fill_transparent"))
+                    .withVertexFormat(VertexFormats.POSITION_COLOR, VertexFormat.DrawMode.TRIANGLES)
+                    .withCull(false)
+                    .withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
+                    .withDepthWrite(true)
+                    .withBlend(BlendFunction.TRANSLUCENT)
+                    .build()
+    );
+
+    private static final RenderPipeline HAT_LINE_PIPELINE = RenderPipelines.register(
             RenderPipeline.builder(RenderPipelines.POSITION_COLOR_SNIPPET)
                     .withLocation(Identifier.of("strange", "hat_line"))
                     .withVertexFormat(VertexFormats.POSITION_COLOR, VertexFormat.DrawMode.DEBUG_LINES)
                     .withCull(false)
                     .withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
-                    .withDepthWrite(false)
-                    .withBlend(BlendFunction.LIGHTNING)
+                    .withDepthWrite(true)
+                    .withBlend(BlendFunction.TRANSLUCENT)
                     .build()
     );
 
-    private RenderLayer getHatFillLayer() {
+    private RenderLayer getHatFillLayer(int alphaValue) {
+        boolean opaque = alphaValue >= 255;
+
         return RenderLayer.of(
-                "strange_hat_fill",
+                opaque ? "strange_hat_fill_opaque" : "strange_hat_fill_transparent",
                 BUFFER_SIZE,
                 false,
                 true,
-                HAT_FILL_PIPELINE,
+                opaque ? HAT_FILL_OPAQUE_PIPELINE : HAT_FILL_TRANSPARENT_PIPELINE,
                 RenderLayer.MultiPhaseParameters.builder().build(false)
         );
     }
 
-    private RenderLayer getHatLineLayer() {
+    private RenderLayer getHatLineLayer(int alphaValue) {
         return RenderLayer.of(
                 "strange_hat_line",
                 BUFFER_SIZE,
@@ -151,7 +214,7 @@ public class Hat extends Module {
                 true,
                 HAT_LINE_PIPELINE,
                 RenderLayer.MultiPhaseParameters.builder()
-                        .lineWidth(new RenderPhase.LineWidth(OptionalDouble.of(3)))
+                        .lineWidth(new RenderPhase.LineWidth(OptionalDouble.of(outlineWidth.get())))
                         .build(false)
         );
     }

@@ -27,8 +27,7 @@
     "GameMenuScreenButtonsMixin",
     "PlayerListEntryMixin",
     "SpiderEntityModelMixin",
-    "CameraMixin",
-    "ClientPlayNetworkHandlerMixin"
+    "CameraMixin"
   ],
   "injectors": {
     "defaultRequire": 1

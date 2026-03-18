@@ -701,6 +701,10 @@ public class RenderUtil implements Helper {
             double a = rgba1[3] + (rgba2[3] - rgba1[3]) * offset;
             return rgba((int) (r * 255.0f), (int) (g * 255.0f), (int) (b * 255.0f), (int) (a * 255.0f));
         }
+        
+        public static int interpolateColor(int color1, int color2, float offset) {
+            return interpolateColor(color1, color2, (double)offset);
+        }
 
         public static float[] getRGBAf(int c) {
             return new float[]{(float) red(c) / 255.F, (float) green(c) / 255.F, (float) blue(c) / 255.F, (float) alpha(c) / 255.F};
