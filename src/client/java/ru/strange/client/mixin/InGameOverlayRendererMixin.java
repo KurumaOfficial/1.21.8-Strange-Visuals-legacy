@@ -19,7 +19,7 @@ public abstract class InGameOverlayRendererMixin {
     }
 
     @Inject(method = "renderOverlays", at = @At("HEAD"), cancellable = true)
-    private static void injectRenderOverlays(boolean renderPumpkinBlur, float tickDelta, CallbackInfo ci) {
+    private void injectRenderOverlays(boolean renderPumpkinBlur, float tickDelta, CallbackInfo ci) {
         if (NoRender.settings.get("Убрать тыкву") && renderPumpkinBlur) {
             ci.cancel();
         }

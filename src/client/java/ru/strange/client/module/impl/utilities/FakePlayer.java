@@ -4,16 +4,15 @@ import com.mojang.authlib.GameProfile;
 import net.minecraft.client.network.OtherClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.Vec3d;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.strange.client.event.EventInit;
 import ru.strange.client.event.impl.EventAttack;
 import ru.strange.client.event.impl.EventUpdate;
@@ -23,9 +22,12 @@ import ru.strange.client.module.api.Module;
 import ru.strange.client.module.api.setting.impl.BooleanSetting;
 import ru.strange.client.module.api.setting.impl.SliderSetting;
 
-import java.lang.reflect.Method;
 import java.util.UUID;
 
+/**
+ * Spawns a client-side fake player entity for testing damage calculations,
+ * totem pop animations, and equipment display.
+ */
 @IModule(
         name = "Фейк игрок",
         description = "",
@@ -34,6 +36,7 @@ import java.util.UUID;
 )
 public class FakePlayer extends Module {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger("FakePlayer");
     public static final String TAG_FAKE_PLAYER = "strange_fake_player";
     private static final int LOCAL_FAKE_ID = -13371337;
 
@@ -84,14 +87,10 @@ public class FakePlayer extends Module {
     public void onAttack(EventAttack event) {
         if (!enable || !hittable.get()) return;
         if (mc.player == null || mc.world == null) return;
-        if (fake == null) return;
-        if (event.getTarget() == null) return;
+        if (fake == null || event.getTarget() == null) return;
         if (event.getTarget() != fake) return;
 
-        try {
-            event.cancel();
-        } catch (Throwable ignored) {
-        }
+        event.cancel();
 
         float damage = calculateLocalDamage(mc.player);
         boolean crit = isCrit(mc.player);
@@ -107,16 +106,13 @@ public class FakePlayer extends Module {
         GameProfile profile = new GameProfile(UUID.randomUUID(), "FakePlayer");
         try {
             profile.getProperties().putAll(mc.player.getGameProfile().getProperties());
-        } catch (Throwable ignored) {
+        } catch (Exception e) {
+            LOGGER.warn("Failed to copy skin profile properties", e);
         }
 
         fake = new OtherClientPlayerEntity(mc.world, profile);
         fake.setId(LOCAL_FAKE_ID);
-
-        try {
-            fake.addCommandTag(TAG_FAKE_PLAYER);
-        } catch (Throwable ignored) {
-        }
+        fake.addCommandTag(TAG_FAKE_PLAYER);
 
         fake.refreshPositionAndAngles(
                 mc.player.getX(),
@@ -151,11 +147,9 @@ public class FakePlayer extends Module {
         if (mc.world != null) {
             try {
                 mc.world.removeEntity(fake.getId(), Entity.RemovalReason.DISCARDED);
-            } catch (Throwable t) {
-                try {
-                    fake.discard();
-                } catch (Throwable ignored) {
-                }
+            } catch (Exception e) {
+                LOGGER.debug("removeEntity failed, falling back to discard()", e);
+                fake.discard();
             }
         }
 
@@ -177,13 +171,7 @@ public class FakePlayer extends Module {
     }
 
     private float calculateLocalDamage(PlayerEntity player) {
-        float baseDamage = 1.0f;
-
-        try {
-            baseDamage = (float) player.getAttributeValue(EntityAttributes.ATTACK_DAMAGE);
-        } catch (Throwable ignored) {
-        }
-
+        float baseDamage = (float) player.getAttributeValue(EntityAttributes.ATTACK_DAMAGE);
         float cooldown = player.getAttackCooldownProgress(0.5f);
         float damage = baseDamage * (0.2f + cooldown * cooldown * 0.8f);
 
@@ -195,12 +183,12 @@ public class FakePlayer extends Module {
     }
 
     private boolean isCrit(PlayerEntity player) {
-        if (player.isOnGround()) return false;
-        if (player.isTouchingWater() || player.isSubmergedIn(FluidTags.WATER)) return false;
-        if (player.isClimbing()) return false;
-        if (player.hasVehicle()) return false;
-        if (player.isSprinting()) return false;
-        return true;
+        return !player.isOnGround()
+                && !player.isTouchingWater()
+                && !player.isSubmergedIn(FluidTags.WATER)
+                && !player.isClimbing()
+                && !player.hasVehicle()
+                && !player.isSprinting();
     }
 
     private void applyLocalDamage(float amount, boolean crit) {
@@ -224,87 +212,55 @@ public class FakePlayer extends Module {
 
         fake.setHealth(0f);
 
-        try {
+        if (mc.world != null) {
             mc.world.playSound(
                     null,
-                    fake.getX(),
-                    fake.getY(),
-                    fake.getZ(),
+                    fake.getX(), fake.getY(), fake.getZ(),
                     SoundEvents.ENTITY_PLAYER_DEATH,
                     fake.getSoundCategory(),
-                    1.0f,
-                    1.0f
+                    1.0f, 1.0f
             );
-        } catch (Throwable ignored) {
         }
     }
 
     private void showHitFeedback(boolean crit) {
         if (fake == null || mc.world == null) return;
 
-        try {
-            fake.handleStatus((byte) 2);
-        } catch (Throwable ignored) {
-        }
+        // Red flash
+        fake.handleStatus((byte) 2);
 
-        tryAnimateDamage();
+        // Damage tilt animation (direct call — no reflection needed)
+        fake.animateDamage(0.0f);
 
-        try {
-            fake.swingHand(Hand.MAIN_HAND);
-        } catch (Throwable ignored) {
-        }
+        fake.swingHand(Hand.MAIN_HAND);
 
-        try {
-            mc.world.playSound(
-                    null,
-                    fake.getX(),
-                    fake.getY(),
-                    fake.getZ(),
-                    SoundEvents.ENTITY_PLAYER_HURT,
-                    fake.getSoundCategory(),
-                    1.0f,
-                    0.95f + (mc.world.random.nextFloat() * 0.1f)
-            );
-        } catch (Throwable ignored) {
-        }
+        mc.world.playSound(
+                null,
+                fake.getX(), fake.getY(), fake.getZ(),
+                SoundEvents.ENTITY_PLAYER_HURT,
+                fake.getSoundCategory(),
+                1.0f, 0.95f + (mc.world.random.nextFloat() * 0.1f)
+        );
 
-        try {
+        // Knockback
+        if (mc.player != null) {
             Vec3d look = mc.player.getRotationVec(1.0f).multiply(0.12, 0.0, 0.12);
             fake.setVelocity(fake.getVelocity().add(look.x, 0.05, look.z));
-        } catch (Throwable ignored) {
         }
     }
 
     private void popTotem() {
         if (fake == null || mc.world == null) return;
 
-        try {
-            fake.handleStatus((byte) 35);
-        } catch (Throwable ignored) {
-        }
+        // Totem pop particle/animation status
+        fake.handleStatus((byte) 35);
 
-        try {
-            mc.world.playSound(
-                    null,
-                    fake.getX(),
-                    fake.getY(),
-                    fake.getZ(),
-                    SoundEvents.ITEM_TOTEM_USE,
-                    fake.getSoundCategory(),
-                    1.0f,
-                    1.0f
-            );
-        } catch (Throwable ignored) {
-        }
-    }
-
-    private void tryAnimateDamage() {
-        if (fake == null) return;
-
-        try {
-            Method animateDamage = fake.getClass().getMethod("animateDamage", float.class);
-            animateDamage.invoke(fake, 0.0f);
-        } catch (Throwable ignored) {
-        }
+        mc.world.playSound(
+                null,
+                fake.getX(), fake.getY(), fake.getZ(),
+                SoundEvents.ITEM_TOTEM_USE,
+                fake.getSoundCategory(),
+                1.0f, 1.0f
+        );
     }
 }

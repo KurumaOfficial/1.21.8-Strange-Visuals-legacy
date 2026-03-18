@@ -13,7 +13,7 @@ public class StrangeVisualsClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (!shown && client.currentScreen instanceof TitleScreen) {
                 shown = true;
-                client.setScreen(new StarterMenuScreen(client.currentScreen));
+                client.setScreen(new StarterMenuScreen());
             }
         });
     }
