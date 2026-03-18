@@ -1098,7 +1098,7 @@ public class WaterMark extends Module {
         FontDraw.drawText(
                 FontDraw.FontType.MEDIUM,
                 ctx,
-                "Инвентарь твоей мамы",
+                "Инвентарь",
                 x + 24f,
                 y + 11.1f,
                 5,
@@ -1129,20 +1129,7 @@ public class WaterMark extends Module {
             }
         }
 
-        if (isInventoryAreaEmpty()) {
-            float gridX = x + 6f;
-            float gridY = y + 24f;
-            float gridW = 16f + 8f * 18f;
-            float gridH = 16f + 2f * 18f;
 
-            drawInventoryOverlayText(
-                    ctx,
-                    "ЕБАТЬ ТЫ БОМЖ",
-                    gridX + gridW / 2f,
-                    gridY + gridH / 2f + 5f,
-                    11
-            );
-        }
     }
 
     private boolean isInventoryAreaEmpty() {
