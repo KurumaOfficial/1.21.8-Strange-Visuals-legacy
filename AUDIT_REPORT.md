@@ -44,7 +44,7 @@
 
 ## 🐛 2. КРИТИЧЕСКИЕ ПРОБЛЕМЫ КОДА
 
-### 🔴 CRIT-01: StarterMenu — мёртвый код
+### ℹ️ CRIT-01: StarterMenu — намеренно не зарегистрирован (dead code by design)
 **Файлы:** `StarterMenu/StrangeVisualsClient.java`  
 **Описание:** `StrangeVisualsClient` реализует `ClientModInitializer`, но НЕ зарегистрирован в `fabric.mod.json` как entrypoint. Весь пакет `StarterMenu/` (AltManagerScreen, NickGenerator, StarterMenuScreen) — мёртвый код, который никогда не вызывается.  
 **Рекомендация:** Либо зарегистрировать в fabric.mod.json, либо удалить. Регистрация двух `ClientModInitializer` требует явного указания обоих.
@@ -65,8 +65,8 @@
 **Описание:** `this.rng = b.seed != null ? new Random(b.seed) : ThreadLocalRandom.current()` — результат `ThreadLocalRandom.current()` сохраняется в поле `Random rng`. `ThreadLocalRandom` привязан к потоку и НЕ должен сохраняться в полях — при использовании из другого потока будет race condition.  
 **Рекомендация:** Всегда вызывать `ThreadLocalRandom.current()` непосредственно при использовании.
 
-### 🔴 CRIT-05: InGameHudMixin — удалён renderer library hook
-**Файл:** `InGameHudMixin.java` (NEW)  
+### ✅ ~~CRIT-05: InGameHudMixin — удалён renderer library hook~~ — ИСПРАВЛЕНО
+**Файл:** `InGameHudMixin.java`  
 **Описание:** В OLD версии вызывался `RenderEvents.HUD.invoker().rendered(context)` из renderer library. В NEW это удалено. Если какой-либо другой код в проекте зависит от этого события — он сломается.  
 **Рекомендация:** Проверить все зависимости от `RenderEvents.HUD`.
 
@@ -74,9 +74,8 @@
 
 ## 🟠 3. ЗНАЧИТЕЛЬНЫЕ ПРОБЛЕМЫ
 
-### WARN-01: WaterMark — God Class (2091 строка)
-**Описание:** Один файл содержит: watermark, module list, target hud, inventory hud, potion hud, cooldown hud, coords hud, drag editor — 7+ независимых систем. Нарушает SRP.  
-**Рекомендация:** Декомпозировать на отдельные HUD-элементы.
+### ✅ ~~WARN-01: WaterMark — God Class~~ — ИСПРАВЛЕНО (2109 → 211 строк + 8 HUD-элементов)
+**Описание:** Декомпозирован в `hud/` пакет: HudElement, WatermarkBar, ModuleListHud, TargetHud, InventoryHud, PotionHud, CooldownHud, CoordsHud.
 
 ### ✅ ~~WARN-02: FakePlayer — playSound с null~~ — ИСПРАВЛЕНО
 **Файл:** `FakePlayer.java`  
@@ -178,8 +177,8 @@ Manager.java: GpsNavigator — удалён из регистрации
 - [x] **CRIT-04** ✅ ИСПРАВЛЕНО: `ThreadLocalRandom.current()` заменён на `new Random()`, удалён неиспользуемый импорт
 
 ### Приоритет 2 (Важные):
-- [ ] CRIT-01: Решить судьбу StarterMenu (зарегистрировать или удалить) — **требует решения автора**
-- [ ] CRIT-05: Проверить зависимости от RenderEvents.HUD — **требует решения автора**
+- [x] CRIT-01: ~~Решить судьбу StarterMenu~~ — **намеренно, не трогаем**
+- [x] **CRIT-05** ✅ ИСПРАВЛЕНО: `RenderEvents.HUD.invoker().rendered(context)` возвращён в InGameHudMixin с профайлером
 - [x] **WARN-02** ✅ ИСПРАВЛЕНО: `null` → `mc.player` во всех 3 вызовах `playSound()` в FakePlayer
 - [x] **STYLE-05** ✅ ИСПРАВЛЕНО: Версия `v1.0` → `v1.1.0` в StarterMenuScreen
 
