@@ -168,7 +168,7 @@ public class AltManagerScreen extends Screen {
         for (int r = 300; r > 0; r -= 8) {
             float fade = 1f - r / 300f;
             ctx.fill(width/2 - r, height/2 - r, width/2 + r, height/2 + r,
-                    new Color(10, 10, 12, (int)(12 * fade * a)).getRGB());
+                    argb(10, 10, 12, (int)(12 * fade * a)));
         }
 
         // Блики
@@ -181,7 +181,7 @@ public class AltManagerScreen extends Screen {
                 float fade = (float)Math.pow(1f - ring / (float)r, 2);
                 ctx.fill((int)orbX[i]-ring, (int)orbY[i]-ring,
                         (int)orbX[i]+ring, (int)orbY[i]+ring,
-                        new Color(15, 15, 18, (int)(12 * fade * a)).getRGB());
+                        argb(15, 15, 18, (int)(12 * fade * a)));
             }
         }
 
@@ -189,9 +189,9 @@ public class AltManagerScreen extends Screen {
         float gp = (float)(Math.sin(time * 0.35f) * 0.5f + 0.5f);
         int la = (int)((1 + gp * 3) * a);
         for (int yy = 0; yy < height; yy += 40)
-            ctx.fill(0, yy, width, yy + 1, new Color(255, 255, 255, la).getRGB());
+            ctx.fill(0, yy, width, yy + 1, argb(255, 255, 255, la));
         for (int xx = 0; xx < width; xx += 40)
-            ctx.fill(xx, 0, xx + 1, height, new Color(255, 255, 255, la).getRGB());
+            ctx.fill(xx, 0, xx + 1, height, argb(255, 255, 255, la));
 
         // Волны
         for (int i = 0; i < WAVE_COUNT; i++) {
@@ -202,7 +202,7 @@ public class AltManagerScreen extends Screen {
                 int y1 = baseY + (int)(Math.sin(x * 0.020f + waveOffset[i]) * waveAmp[i]);
                 int y2 = baseY + (int)(Math.sin((x+2) * 0.020f + waveOffset[i]) * waveAmp[i]);
                 ctx.fill(x, Math.min(y1,y2), x+2, Math.max(y1,y2)+1,
-                        new Color(255, 255, 255, wa).getRGB());
+                        argb(255, 255, 255, wa));
             }
         }
 
@@ -218,13 +218,13 @@ public class AltManagerScreen extends Screen {
 
         // Шапка
         ctx.fill(ppx + 1, ppy + 1, ppx + PANEL_W - 1, ppy + 24,
-                new Color(12, 12, 14, (int)(230 * a)).getRGB());
+                argb(12, 12, 14, (int)(230 * a)));
 
         // Градиентная линия
         for (int lx = 0; lx < PANEL_W - 20; lx++) {
             float fade = 1f - Math.abs(lx - (PANEL_W-20)/2f) / ((PANEL_W-20)/2f);
             ctx.fill(ppx + 10 + lx, ppy + 24, ppx + 11 + lx, ppy + 25,
-                    new Color(255, 255, 255, (int)(18 * fade * a)).getRGB());
+                    argb(255, 255, 255, (int)(18 * fade * a)));
         }
 
         // Заголовок
@@ -232,22 +232,22 @@ public class AltManagerScreen extends Screen {
         int tw = textRenderer.getWidth(title);
         ctx.drawText(textRenderer, title,
                 ppx + (PANEL_W - tw) / 2 + 1, ppy + 8 + 1,
-                new Color(0, 0, 0, (int)(80 * a)).getRGB(), false);
+                argb(0, 0, 0, (int)(80 * a)), false);
         ctx.drawText(textRenderer, title,
                 ppx + (PANEL_W - tw) / 2, ppy + 8,
-                new Color(240, 240, 245, (int)(230 * a)).getRGB(), false);
+                argb(240, 240, 245, (int)(230 * a)), false);
 
         // Счётчик
         ctx.drawText(textRenderer, accounts.size() + "/50",
                 ppx + 10, ppy + 8,
-                new Color(55, 55, 60, (int)(200 * a)).getRGB(), false);
+                argb(55, 55, 60, (int)(200 * a)), false);
 
         // Текущий
         if (currentAccount != null) {
             String cur = "@ " + currentAccount;
             ctx.drawText(textRenderer, cur,
                     ppx + PANEL_W - 10 - textRenderer.getWidth(cur), ppy + 8,
-                    new Color(155, 155, 165, (int)(200 * a)).getRGB(), false);
+                    argb(155, 155, 165, (int)(200 * a)), false);
         }
 
         // Список
@@ -289,7 +289,7 @@ public class AltManagerScreen extends Screen {
                 for (int dy = 0; dy < itemH - 12; dy++) {
                     float fade = 1f - Math.abs(dy - (itemH-12)/2f) / ((itemH-12)/2f);
                     ctx.fill(ix + 1, iy - offY + 5 + dy, ix + 2, iy - offY + 6 + dy,
-                            new Color(255, 255, 255, (int)(100 * fade * cardA * a)).getRGB());
+                            argb(255, 255, 255, (int)(100 * fade * cardA * a)));
                 }
             }
 
@@ -311,13 +311,13 @@ public class AltManagerScreen extends Screen {
             // Имя
             ctx.drawText(textRenderer, acc.name,
                     avX + avSize + 3, iy - offY + 5,
-                    new Color(sel ? 245 : 195, sel ? 245 : 195, sel ? 250 : 200,
-                            (int)(220 * cardA * a)).getRGB(), false);
+                    argb(sel ? 245 : 195, sel ? 245 : 195, sel ? 250 : 200,
+                            (int)(220 * cardA * a)), false);
 
             // Дата
             ctx.drawText(textRenderer, acc.date,
                     avX + avSize + 3, iy - offY + 15,
-                    new Color(48, 48, 52, (int)(165 * cardA * a)).getRGB(), false);
+                    argb(48, 48, 52, (int)(165 * cardA * a)), false);
         }
 
         ctx.disableScissor();
@@ -327,7 +327,7 @@ public class AltManagerScreen extends Screen {
             float fade = 1f - Math.abs(lx - (PANEL_W-20)/2f) / ((PANEL_W-20)/2f);
             ctx.fill(ppx + 10 + lx, ppy + PANEL_H - 56,
                     ppx + 11 + lx, ppy + PANEL_H - 55,
-                    new Color(255, 255, 255, (int)(12 * fade * a)).getRGB());
+                    argb(255, 255, 255, (int)(12 * fade * a)));
         }
 
         // Hover кнопок
@@ -348,12 +348,10 @@ public class AltManagerScreen extends Screen {
         // Back
         ctx.drawText(textRenderer, "< Back",
                 ppx + 10, ppy + PANEL_H - 9,
-                new Color(
-                        (int)(65 + hBck * 135),
+                argb((int)(65 + hBck * 135),
                         (int)(65 + hBck * 135),
                         (int)(70 + hBck * 135),
-                        (int)((120 + hBck * 105) * a)
-                ).getRGB(), false);
+                        (int)((120 + hBck * 105) * a)), false);
 
         // Пустой список
         if (accounts.isEmpty()) {
@@ -363,8 +361,8 @@ public class AltManagerScreen extends Screen {
             ctx.drawText(textRenderer, empty,
                     ppx + (PANEL_W - ew) / 2,
                     ppy + 30 + (listH - textRenderer.fontHeight) / 2,
-                    new Color(35 + (int)(pulse * 15), 35 + (int)(pulse * 15), 38 + (int)(pulse * 15),
-                            (int)(180 * a)).getRGB(), false);
+                    argb(35 + (int)(pulse * 15), 35 + (int)(pulse * 15), 38 + (int)(pulse * 15),
+                            (int)(180 * a)), false);
         }
 
         // Сообщение
@@ -378,7 +376,7 @@ public class AltManagerScreen extends Screen {
                     new Color(10, 10, 12, (int)(180 * mf * a)));
             ctx.drawText(textRenderer, message,
                     ppx + (PANEL_W - mw) / 2, ppy + PANEL_H + 6,
-                    new Color(130, 210, 135, msgA).getRGB(), false);
+                    argb(130, 210, 135, msgA), false);
         }
 
         super.render(ctx, mouseX, mouseY, delta);
@@ -408,13 +406,13 @@ public class AltManagerScreen extends Screen {
 
         if (hover > 0.01f && !red)
             ctx.fill(x+1, y+3, x+2, y+h-3,
-                    new Color(255, 255, 255, (int)(hover * 90 * a)).getRGB());
+                    argb(255, 255, 255, (int)(hover * 90 * a)));
 
         int tw = textRenderer.getWidth(label);
         int tc = red
-                ? new Color((int)(140 + hover * 115), 48, 48, (int)(225 * a)).getRGB()
-                : new Color((int)(165 + hover * 90), (int)(165 + hover * 90),
-                (int)(170 + hover * 85), (int)(225 * a)).getRGB();
+                ? argb((int)(140 + hover * 115), 48, 48, (int)(225 * a))
+                : argb((int)(165 + hover * 90), (int)(165 + hover * 90),
+                (int)(170 + hover * 85), (int)(225 * a));
         ctx.drawText(textRenderer, label,
                 x + (w - tw) / 2, y + (h - textRenderer.fontHeight) / 2, tc, false);
     }
@@ -473,5 +471,13 @@ public class AltManagerScreen extends Screen {
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    /** ARGB int without heap allocation. */
+    private static int argb(int r, int g, int b, int a) {
+        return (Math.min(255, Math.max(0, a)) << 24)
+             | (Math.min(255, Math.max(0, r)) << 16)
+             | (Math.min(255, Math.max(0, g)) << 8)
+             |  Math.min(255, Math.max(0, b));
     }
 }

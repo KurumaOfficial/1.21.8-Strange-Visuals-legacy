@@ -214,7 +214,7 @@ public class FakePlayer extends Module {
 
         if (mc.world != null) {
             mc.world.playSound(
-                    null,
+                    mc.player,
                     fake.getX(), fake.getY(), fake.getZ(),
                     SoundEvents.ENTITY_PLAYER_DEATH,
                     fake.getSoundCategory(),
@@ -235,7 +235,7 @@ public class FakePlayer extends Module {
         fake.swingHand(Hand.MAIN_HAND);
 
         mc.world.playSound(
-                null,
+                mc.player,
                 fake.getX(), fake.getY(), fake.getZ(),
                 SoundEvents.ENTITY_PLAYER_HURT,
                 fake.getSoundCategory(),
@@ -256,7 +256,7 @@ public class FakePlayer extends Module {
         fake.handleStatus((byte) 35);
 
         mc.world.playSound(
-                null,
+                mc.player,
                 fake.getX(), fake.getY(), fake.getZ(),
                 SoundEvents.ITEM_TOTEM_USE,
                 fake.getSoundCategory(),

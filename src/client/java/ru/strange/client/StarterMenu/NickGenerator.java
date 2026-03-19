@@ -2,7 +2,6 @@ package ru.strange.client.StarterMenu;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -102,7 +101,7 @@ public final class NickGenerator {
         this.leetChance = b.leetChance;
         this.numberChance = b.numberChance;
         this.blacklist = b.blacklist;
-        this.rng = b.seed != null ? new Random(b.seed) : ThreadLocalRandom.current();
+        this.rng = b.seed != null ? new Random(b.seed) : new Random();
         this.history = ensureUnique ? ConcurrentHashMap.newKeySet() : null;
         this.maxRetries = b.maxRetries;
     }

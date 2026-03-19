@@ -128,7 +128,7 @@ public class StarterMenuScreen extends Screen {
         for (int r = 300; r > 0; r -= 8) {
             float fade = 1f - r / 300f;
             ctx.fill(cx - r, cy - r, cx + r, cy + r,
-                    new Color(10, 10, 12, (int)(12 * fade * a)).getRGB());
+                    argb(10, 10, 12, (int)(12 * fade * a)));
         }
 
         // Блики
@@ -141,7 +141,7 @@ public class StarterMenuScreen extends Screen {
                 float fade = (float)Math.pow(1f - ring / (float)r, 2);
                 ctx.fill((int)orbX[i]-ring, (int)orbY[i]-ring,
                         (int)orbX[i]+ring, (int)orbY[i]+ring,
-                        new Color(15, 15, 18, (int)(12 * fade * a)).getRGB());
+                        argb(15, 15, 18, (int)(12 * fade * a)));
             }
         }
 
@@ -149,9 +149,9 @@ public class StarterMenuScreen extends Screen {
         float gp = (float)(Math.sin(time * 0.35f) * 0.5f + 0.5f);
         int la = (int)((1 + gp * 3) * a);
         for (int yy = 0; yy < height; yy += 40)
-            ctx.fill(0, yy, width, yy+1, new Color(255,255,255,la).getRGB());
+            ctx.fill(0, yy, width, yy+1, argb(255,255,255,la));
         for (int xx = 0; xx < width; xx += 40)
-            ctx.fill(xx, 0, xx+1, height, new Color(255,255,255,la).getRGB());
+            ctx.fill(xx, 0, xx+1, height, argb(255,255,255,la));
 
         // Волны
         for (int i = 0; i < WAVE_COUNT; i++) {
@@ -162,7 +162,7 @@ public class StarterMenuScreen extends Screen {
                 int y1 = baseY + (int)(Math.sin(x * 0.020f + waveOffset[i]) * waveAmp[i]);
                 int y2 = baseY + (int)(Math.sin((x+2) * 0.020f + waveOffset[i]) * waveAmp[i]);
                 ctx.fill(x, Math.min(y1,y2), x+2, Math.max(y1,y2)+1,
-                        new Color(255,255,255,wa).getRGB());
+                        argb(255,255,255,wa));
             }
         }
 
@@ -171,7 +171,7 @@ public class StarterMenuScreen extends Screen {
         for (int r = 200; r > 0; r -= 10) {
             float fade = 1f - r / 200f;
             ctx.fill(cx-r, cy-r, cx+r, cy+r,
-                    new Color(12,12,14,(int)(8*fade*pulse*a)).getRGB());
+                    argb(12,12,14,(int)(8*fade*pulse*a)));
         }
 
         // Иконка
@@ -182,7 +182,7 @@ public class StarterMenuScreen extends Screen {
         for (int r = 34; r > 0; r -= 4) {
             float fade = 1f - r / 34f;
             ctx.fill(cx-r, iconY+iconSize/2-r, cx+r, iconY+iconSize/2+r,
-                    new Color(255,255,255,(int)(4*fade*iconPulse*a)).getRGB());
+                    argb(255,255,255,(int)(4*fade*iconPulse*a)));
         }
         RenderUtil.Round.draw(ctx, iconX, iconY, iconSize, iconSize, iconSize/2,
                 new Color(14,14,16,(int)(235*a)));
@@ -198,20 +198,20 @@ public class StarterMenuScreen extends Screen {
         String title = "Strange Visuals.";
         int tw = textRenderer.getWidth(title);
         ctx.drawText(textRenderer, title, cx-tw/2+1, nameY+1,
-                new Color(0,0,0,(int)(80*a)).getRGB(), false);
+                argb(0,0,0,(int)(80*a)), false);
         ctx.drawText(textRenderer, title, cx-tw/2, nameY,
-                new Color(240,240,245,(int)(240*a)).getRGB(), false);
+                argb(240,240,245,(int)(240*a)), false);
 
-        String ver = "v1.0  ·  1.21.8";
+        String ver = "v1.1.0  ·  1.21.8";
         int vw = textRenderer.getWidth(ver);
         ctx.drawText(textRenderer, ver, cx-vw/2, nameY+13,
-                new Color(75,75,80,(int)(180*a)).getRGB(), false);
+                argb(75,75,80,(int)(180*a)), false);
 
         int lineW = 80;
         for (int lx = 0; lx < lineW; lx++) {
             float fade = 1f - Math.abs(lx - lineW/2f) / (lineW/2f);
             ctx.fill(cx-lineW/2+lx, nameY+26, cx-lineW/2+lx+1, nameY+27,
-                    new Color(255,255,255,(int)(30*fade*a)).getRGB());
+                    argb(255,255,255,(int)(30*fade*a)));
         }
 
         // Hover + кнопки
@@ -254,21 +254,29 @@ public class StarterMenuScreen extends Screen {
             for (int dy = 0; dy < h-12; dy++) {
                 float fade = 1f - Math.abs(dy-(h-12)/2f)/((h-12)/2f);
                 ctx.fill(x+1, y+6+dy, x+2, y+7+dy,
-                        new Color(255,255,255,(int)(hover*140*fade*a)).getRGB());
+                        argb(255,255,255,(int)(hover*140*fade*a)));
                 ctx.fill(x+w-2, y+6+dy, x+w-1, y+7+dy,
-                        new Color(255,255,255,(int)(hover*70*fade*a)).getRGB());
+                        argb(255,255,255,(int)(hover*70*fade*a)));
             }
         }
         int tw = textRenderer.getWidth(label);
         int tc = (int)(180 + hover * 75);
         ctx.drawText(textRenderer, label,
                 x+(w-tw)/2, y+(h-textRenderer.fontHeight)/2,
-                new Color(tc,tc,tc,(int)(230*a)).getRGB(), false);
+                argb(tc,tc,tc,(int)(230*a)), false);
     }
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) return true;
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    /** ARGB int without heap allocation. */
+    private static int argb(int r, int g, int b, int a) {
+        return (Math.min(255, Math.max(0, a)) << 24)
+             | (Math.min(255, Math.max(0, r)) << 16)
+             | (Math.min(255, Math.max(0, g)) << 8)
+             |  Math.min(255, Math.max(0, b));
     }
 }

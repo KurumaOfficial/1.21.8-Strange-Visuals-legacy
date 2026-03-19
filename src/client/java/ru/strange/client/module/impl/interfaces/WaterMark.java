@@ -108,6 +108,21 @@ public class WaterMark extends Module {
     private static final float MODULE_ICON_SIZE = 7.5f;
     private static final float MODULE_TEXT_SIZE = 5f;
 
+    // ─── Reflection caches (CRIT-03) ───
+    private static final Map<Class<?>, Identifier> moduleIconCache = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Map<Class<? extends LivingEntity>, Identifier> entityTextureCache = new java.util.concurrent.ConcurrentHashMap<>();
+    private static volatile Method cachedSpawnEggMethod;
+    private static volatile boolean spawnEggMethodSearched;
+    private transient Field cachedCdMapField;
+    private transient Field cachedCdTickField;
+    private transient Class<?> lastCdManagerClass;
+    private transient Method cachedGroupMethod;
+    private transient Class<?> lastGroupManagerClass;
+    private transient Method cachedIsCdMethod;
+    private transient Class<?> lastIsCdManagerClass;
+    private transient List<Field> cachedEntryFields;
+    private transient Class<?> lastEntryClass;
+
     private boolean initialized;
     private boolean lastMouseDown;
     private boolean targetLastAttackDown;
@@ -518,28 +533,19 @@ public class WaterMark extends Module {
     }
 
     private Identifier getModuleIcon(Module module) {
-        try {
-            IModule annotation = module.getClass().getAnnotation(IModule.class);
-            if (annotation != null) {
-                String cat = annotation.category().name().toLowerCase();
-
-                if (cat.contains("player") || cat.contains("combat") || cat.contains("movement")) {
-                    return playerIcon;
+        return moduleIconCache.computeIfAbsent(module.getClass(), clazz -> {
+            try {
+                IModule annotation = clazz.getAnnotation(IModule.class);
+                if (annotation != null) {
+                    String cat = annotation.category().name().toLowerCase();
+                    if (cat.contains("player") || cat.contains("combat") || cat.contains("movement")) return playerIcon;
+                    if (cat.contains("world") || cat.contains("render")) return worldIcon;
+                    if (cat.contains("util") || cat.contains("misc")) return utilitiesIcon;
+                    if (cat.contains("interface") || cat.contains("client")) return interfaceIcon;
                 }
-                if (cat.contains("world") || cat.contains("render")) {
-                    return worldIcon;
-                }
-                if (cat.contains("util") || cat.contains("misc")) {
-                    return utilitiesIcon;
-                }
-                if (cat.contains("interface") || cat.contains("client")) {
-                    return interfaceIcon;
-                }
-            }
-        } catch (Throwable ignored) {
-        }
-
-        return otherIcon;
+            } catch (Throwable ignored) {}
+            return otherIcon;
+        });
     }
 
     private int moduleText() {
@@ -866,6 +872,12 @@ public class WaterMark extends Module {
     }
 
     private Identifier getEntityTextureFromRenderer(LivingEntity entity) {
+        @SuppressWarnings("unchecked")
+        Class<? extends LivingEntity> entityClass = (Class<? extends LivingEntity>) entity.getClass();
+        Identifier cached = entityTextureCache.get(entityClass);
+        if (cached != null) return cached;
+        if (entityTextureCache.containsKey(entityClass)) return null; // already searched, was null
+
         try {
             Object dispatcher = mc.getEntityRenderDispatcher();
             Object renderer = null;
@@ -873,33 +885,33 @@ public class WaterMark extends Module {
             for (Method method : dispatcher.getClass().getMethods()) {
                 if (!method.getName().equals("getRenderer")) continue;
                 if (method.getParameterCount() != 1) continue;
-
                 Class<?> type = method.getParameterTypes()[0];
-                if (!type.isAssignableFrom(entity.getClass())) continue;
-
+                if (!type.isAssignableFrom(entityClass)) continue;
                 method.setAccessible(true);
                 renderer = method.invoke(dispatcher, entity);
                 break;
             }
 
-            if (renderer == null) return null;
+            if (renderer == null) {
+                entityTextureCache.put(entityClass, null);
+                return null;
+            }
 
             for (Method method : renderer.getClass().getMethods()) {
                 if (method.getParameterCount() != 1) continue;
                 if (!Identifier.class.isAssignableFrom(method.getReturnType())) continue;
-
                 Class<?> type = method.getParameterTypes()[0];
-                if (!type.isAssignableFrom(entity.getClass())) continue;
-
+                if (!type.isAssignableFrom(entityClass)) continue;
                 method.setAccessible(true);
                 Object result = method.invoke(renderer, entity);
-                if (result instanceof Identifier) {
-                    return (Identifier) result;
+                if (result instanceof Identifier id) {
+                    entityTextureCache.put(entityClass, id);
+                    return id;
                 }
             }
-        } catch (Throwable ignored) {
-        }
+        } catch (Throwable ignored) {}
 
+        entityTextureCache.put(entityClass, null);
         return null;
     }
 
@@ -1051,26 +1063,29 @@ public class WaterMark extends Module {
 
     private ItemStack getSpawnEggIcon(LivingEntity entity) {
         try {
-            for (Method method : SpawnEggItem.class.getDeclaredMethods()) {
-                if (!method.getName().equals("forEntity")) continue;
-                if (method.getParameterCount() != 1) continue;
-
-                method.setAccessible(true);
-                Object result = method.invoke(null, entity.getType());
-
-                if (result instanceof SpawnEggItem) {
-                    return new ItemStack((SpawnEggItem) result);
-                }
-
-                if (result instanceof java.util.Optional) {
-                    java.util.Optional<?> optional = (java.util.Optional<?>) result;
-                    if (optional.isPresent() && optional.get() instanceof SpawnEggItem) {
-                        return new ItemStack((SpawnEggItem) optional.get());
+            if (!spawnEggMethodSearched) {
+                spawnEggMethodSearched = true;
+                for (Method m : SpawnEggItem.class.getDeclaredMethods()) {
+                    if (m.getName().equals("forEntity") && m.getParameterCount() == 1) {
+                        m.setAccessible(true);
+                        cachedSpawnEggMethod = m;
+                        break;
                     }
                 }
             }
-        } catch (Throwable ignored) {
-        }
+            if (cachedSpawnEggMethod == null) return ItemStack.EMPTY;
+
+            Object result = cachedSpawnEggMethod.invoke(null, entity.getType());
+
+            if (result instanceof SpawnEggItem egg) {
+                return new ItemStack(egg);
+            }
+            if (result instanceof java.util.Optional<?> optional) {
+                if (optional.isPresent() && optional.get() instanceof SpawnEggItem egg) {
+                    return new ItemStack(egg);
+                }
+            }
+        } catch (Throwable ignored) {}
 
         return ItemStack.EMPTY;
     }
@@ -1510,51 +1525,58 @@ public class WaterMark extends Module {
 
     private Object getCooldownGroupForStack(Object manager, ItemStack stack) {
         try {
-            for (Method method : manager.getClass().getMethods()) {
-                String name = method.getName().toLowerCase();
-                if (!name.contains("group")) continue;
-                if (method.getParameterCount() != 1) continue;
-
-                method.setAccessible(true);
-                Class<?> param = method.getParameterTypes()[0];
-
-                if (param.isAssignableFrom(stack.getClass())) {
-                    return method.invoke(manager, stack);
-                }
-
-                if (param.isAssignableFrom(stack.getItem().getClass())) {
-                    return method.invoke(manager, stack.getItem());
+            Class<?> mClass = manager.getClass();
+            if (cachedGroupMethod == null || lastGroupManagerClass != mClass) {
+                lastGroupManagerClass = mClass;
+                cachedGroupMethod = null;
+                for (Method m : mClass.getMethods()) {
+                    if (m.getName().toLowerCase().contains("group") && m.getParameterCount() == 1) {
+                        m.setAccessible(true);
+                        cachedGroupMethod = m;
+                        break;
+                    }
                 }
             }
-        } catch (Throwable ignored) {
-        }
+            if (cachedGroupMethod == null) return null;
 
+            Class<?> param = cachedGroupMethod.getParameterTypes()[0];
+            if (param.isAssignableFrom(stack.getClass())) {
+                return cachedGroupMethod.invoke(manager, stack);
+            }
+            if (param.isAssignableFrom(stack.getItem().getClass())) {
+                return cachedGroupMethod.invoke(manager, stack.getItem());
+            }
+        } catch (Throwable ignored) {}
         return null;
     }
 
     private boolean isCoolingDown(Object manager, ItemStack stack) {
         try {
-            for (Method method : manager.getClass().getMethods()) {
-                if (!method.getName().equals("isCoolingDown")) continue;
-                if (method.getParameterCount() != 1) continue;
-                if (method.getReturnType() != boolean.class && method.getReturnType() != Boolean.class) continue;
-
-                method.setAccessible(true);
-                Class<?> param = method.getParameterTypes()[0];
-
-                if (param.isAssignableFrom(stack.getClass())) {
-                    Object result = method.invoke(manager, stack);
-                    if (result instanceof Boolean) return (Boolean) result;
-                }
-
-                if (param.isAssignableFrom(stack.getItem().getClass())) {
-                    Object result = method.invoke(manager, stack.getItem());
-                    if (result instanceof Boolean) return (Boolean) result;
+            Class<?> mClass = manager.getClass();
+            if (cachedIsCdMethod == null || lastIsCdManagerClass != mClass) {
+                lastIsCdManagerClass = mClass;
+                cachedIsCdMethod = null;
+                for (Method m : mClass.getMethods()) {
+                    if (m.getName().equals("isCoolingDown") && m.getParameterCount() == 1
+                            && (m.getReturnType() == boolean.class || m.getReturnType() == Boolean.class)) {
+                        m.setAccessible(true);
+                        cachedIsCdMethod = m;
+                        break;
+                    }
                 }
             }
-        } catch (Throwable ignored) {
-        }
+            if (cachedIsCdMethod == null) return false;
 
+            Class<?> param = cachedIsCdMethod.getParameterTypes()[0];
+            if (param.isAssignableFrom(stack.getClass())) {
+                Object r = cachedIsCdMethod.invoke(manager, stack);
+                if (r instanceof Boolean b) return b;
+            }
+            if (param.isAssignableFrom(stack.getItem().getClass())) {
+                Object r = cachedIsCdMethod.invoke(manager, stack.getItem());
+                if (r instanceof Boolean b) return b;
+            }
+        } catch (Throwable ignored) {}
         return false;
     }
 
@@ -1563,28 +1585,28 @@ public class WaterMark extends Module {
         if (manager == null) return result;
 
         try {
-            Field mapField = null;
-            Field tickField = null;
-
-            for (Field field : manager.getClass().getDeclaredFields()) {
-                if (mapField == null && Map.class.isAssignableFrom(field.getType())) {
-                    mapField = field;
-                } else if (tickField == null && field.getType() == int.class) {
-                    tickField = field;
+            Class<?> mClass = manager.getClass();
+            if (lastCdManagerClass != mClass) {
+                lastCdManagerClass = mClass;
+                cachedCdMapField = null;
+                cachedCdTickField = null;
+                for (Field field : mClass.getDeclaredFields()) {
+                    if (cachedCdMapField == null && Map.class.isAssignableFrom(field.getType())) {
+                        field.setAccessible(true);
+                        cachedCdMapField = field;
+                    } else if (cachedCdTickField == null && field.getType() == int.class) {
+                        field.setAccessible(true);
+                        cachedCdTickField = field;
+                    }
                 }
             }
 
-            if (mapField == null) return result;
+            if (cachedCdMapField == null) return result;
 
-            mapField.setAccessible(true);
-            Object rawMap = mapField.get(manager);
+            Object rawMap = cachedCdMapField.get(manager);
             if (!(rawMap instanceof Map<?, ?>)) return result;
 
-            int currentTick = 0;
-            if (tickField != null) {
-                tickField.setAccessible(true);
-                currentTick = tickField.getInt(manager);
-            }
+            int currentTick = cachedCdTickField != null ? cachedCdTickField.getInt(manager) : 0;
 
             for (Map.Entry<?, ?> entry : ((Map<?, ?>) rawMap).entrySet()) {
                 Object stateObj = entry.getValue();
@@ -1603,35 +1625,31 @@ public class WaterMark extends Module {
 
                 result.put(entry.getKey(), new CooldownState(remainingTicks, totalTicks));
             }
-        } catch (Throwable ignored) {
-        }
+        } catch (Throwable ignored) {}
 
         return result;
     }
 
     private int[] readCooldownEntryTicks(Object stateObj) {
         try {
-            List<Field> intFields = new ArrayList<>();
-
-            for (Field field : stateObj.getClass().getDeclaredFields()) {
-                if (field.getType() == int.class) {
-                    field.setAccessible(true);
-                    intFields.add(field);
+            Class<?> eClass = stateObj.getClass();
+            if (lastEntryClass != eClass) {
+                lastEntryClass = eClass;
+                cachedEntryFields = new ArrayList<>();
+                for (Field field : eClass.getDeclaredFields()) {
+                    if (field.getType() == int.class) {
+                        field.setAccessible(true);
+                        cachedEntryFields.add(field);
+                    }
                 }
             }
 
-            if (intFields.size() >= 2) {
-                int a = intFields.get(0).getInt(stateObj);
-                int b = intFields.get(1).getInt(stateObj);
-
-                if (a <= b) {
-                    return new int[]{a, b};
-                } else {
-                    return new int[]{b, a};
-                }
+            if (cachedEntryFields != null && cachedEntryFields.size() >= 2) {
+                int a = cachedEntryFields.get(0).getInt(stateObj);
+                int b = cachedEntryFields.get(1).getInt(stateObj);
+                return a <= b ? new int[]{a, b} : new int[]{b, a};
             }
-        } catch (Throwable ignored) {
-        }
+        } catch (Throwable ignored) {}
 
         return new int[]{0, 0};
     }
