@@ -10,11 +10,13 @@ import org.lwjgl.glfw.GLFW;
 import ru.strange.client.Strange;
 import ru.strange.client.event.EventInit;
 import ru.strange.client.event.impl.EventMouseInput;
+import ru.strange.client.localization.ModLocalization;
 import ru.strange.client.module.api.Category;
 import ru.strange.client.module.api.IModule;
 import ru.strange.client.module.api.Module;
 import ru.strange.client.module.api.setting.impl.BindSettings;
 import ru.strange.client.utils.math.TimerUtil;
+import ru.strange.client.utils.other.BindUtil;
 import ru.strange.client.utils.other.SoundUtil;
 
 @IModule(
@@ -24,49 +26,55 @@ import ru.strange.client.utils.other.SoundUtil;
         bind = -1
 )
 public class MiddleClick extends Module {
-    public static BindSettings friendkey = new BindSettings("Кнопка", GLFW.GLFW_MOUSE_BUTTON_MIDDLE);
+
+    public static BindSettings friendkey = new BindSettings("Кнопка", BindSettings.mouseCode(GLFW.GLFW_MOUSE_BUTTON_MIDDLE));
+
+    private final TimerUtil swapWatchK = new TimerUtil();
 
     public MiddleClick() {
         addSettings(friendkey);
     }
-    private final TimerUtil swapWatchK = new TimerUtil();
 
     @EventInit
     public void onMouseClick(EventMouseInput e) {
-        if (e.button() == friendkey.get() && swapWatchK.hasTimeElapsed(200)) {
+        if (!enable || mc.player == null || mc.world == null) return;
+        if (mc.currentScreen != null) return;
+        if (e.action() != GLFW.GLFW_PRESS) return;
 
-            HitResult hitResult = mc.crosshairTarget;
-            if (hitResult == null || hitResult.getType() != HitResult.Type.ENTITY) return;
+        if (!BindUtil.matchesMouse(friendkey.get(), e.button())) return;
+        if (!swapWatchK.hasTimeElapsed(200)) return;
 
-            Entity entity = ((EntityHitResult) hitResult).getEntity();
-            if (!(entity instanceof PlayerEntity player)) return;
+        HitResult hitResult = mc.crosshairTarget;
+        if (hitResult == null || hitResult.getType() != HitResult.Type.ENTITY) return;
 
-            String name = player.getName().getString();
+        Entity entity = ((EntityHitResult) hitResult).getEntity();
+        if (!(entity instanceof PlayerEntity player)) return;
 
-            if (!Strange.get.friendManager.isFriend(name)) {
+        String name = player.getGameProfile().getName();
+        if (name == null || name.isBlank() || Strange.get == null || Strange.get.friendManager == null) return;
 
-                Text msg = Text.literal("Друг - ")
-                        .formatted(Formatting.WHITE)
-                        .append(Text.literal(name).formatted(Formatting.GREEN))
-                        .append(Text.literal(" добавлен :)").formatted(Formatting.GRAY));
+        if (!Strange.get.friendManager.isFriend(name)) {
+            Text msg = Text.literal(ModLocalization.tr("friend.added.prefix"))
+                    .formatted(Formatting.WHITE)
+                    .append(Text.literal(name).formatted(Formatting.GREEN))
+                    .append(Text.literal(ModLocalization.tr("friend.added.suffix")).formatted(Formatting.GRAY));
 
-                mc.player.sendMessage(msg, false);
+            mc.player.sendMessage(msg, false);
 
-                Strange.get.friendManager.add(name);
-                SoundUtil.playSound_wav("add", 0.5f);
-            } else {
+            Strange.get.friendManager.add(name);
+            SoundUtil.playSound_wav("add", 0.5f);
+        } else {
+            Text msg = Text.literal(ModLocalization.tr("friend.added.prefix"))
+                    .formatted(Formatting.WHITE)
+                    .append(Text.literal(name).formatted(Formatting.RED))
+                    .append(Text.literal(ModLocalization.tr("friend.removed.suffix")).formatted(Formatting.GRAY));
 
-                Text msg = Text.literal("Друг - ")
-                        .formatted(Formatting.WHITE)
-                        .append(Text.literal(name).formatted(Formatting.RED))
-                        .append(Text.literal(" удален :(").formatted(Formatting.GRAY));
+            mc.player.sendMessage(msg, false);
 
-                mc.player.sendMessage(msg, false);
-
-                Strange.get.friendManager.remove(name);
-                SoundUtil.playSound_wav("remove", 0.5f);
-            }
-            swapWatchK.reset();
+            Strange.get.friendManager.remove(name);
+            SoundUtil.playSound_wav("remove", 0.5f);
         }
+
+        swapWatchK.reset();
     }
 }

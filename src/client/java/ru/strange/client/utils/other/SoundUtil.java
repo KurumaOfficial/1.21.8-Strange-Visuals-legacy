@@ -2,93 +2,97 @@ package ru.strange.client.utils.other;
 
 import ru.strange.client.Strange;
 
-import javax.sound.sampled.*;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.FloatControl;
+import javax.sound.sampled.LineEvent;
 import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
-public class SoundUtil {
-    private static Clip currentClip = null;
-    public static void playSound_mp3(String sound, float value, boolean nonstop) {
-        if (currentClip != null && currentClip.isRunning()) {
-            currentClip.stop();
-        }
-        try {
-            currentClip = AudioSystem.getClip();
-            InputStream is = Strange.class.getResourceAsStream("/assets/" + Strange.get.rootRes + "/sounds/mp3/" + sound);
-            BufferedInputStream bis = new BufferedInputStream(is);
-            AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(bis);
-            if (audioInputStream == null) {
-                System.out.println("Sound not found!");
+public final class SoundUtil {
+    private static final List<Clip> ACTIVE_CLIPS = new ArrayList<>();
+
+    private SoundUtil() {
+    }
+
+    public static synchronized void playSound_wav(String location, float volume) {
+        cleanupStoppedClips();
+
+        String resourcePath = "/assets/" + Strange.get.rootRes + "/sounds/wav/" + location + ".wav";
+        try (InputStream inputStream = SoundUtil.class.getResourceAsStream(resourcePath)) {
+            if (inputStream == null) {
+                Strange.LOGGER.warn("WAV sound resource not found: {}", resourcePath);
                 return;
             }
 
-            currentClip.open(audioInputStream);
-            currentClip.start();
-            FloatControl floatControl = (FloatControl) currentClip.getControl(FloatControl.Type.MASTER_GAIN);
-            float min = floatControl.getMinimum();
-            float max = floatControl.getMaximum();
-            float volumeInDecibels = (float) (min * (1 - (value / 100.0)) + max * (value / 100.0));
-            floatControl.setValue(volumeInDecibels);
-            if (nonstop) {
-                currentClip.addLineListener(event -> {
-                    if (event.getType() == LineEvent.Type.STOP) {
-                        currentClip.setFramePosition(0);
-                        currentClip.start();
-                    }
-                });
+            try (BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
+                 AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(bufferedInputStream)) {
+                Clip clip = AudioSystem.getClip();
+                clip.addLineListener(event -> onClipEvent(clip, event));
+                clip.open(audioInputStream);
+                applyVolume(clip, volume);
+                ACTIVE_CLIPS.add(clip);
+                clip.start();
             }
-        } catch (Exception exception) {
-            exception.printStackTrace();
+        } catch (Exception e) {
+            Strange.LOGGER.warn("Failed to play WAV sound {}", location, e);
         }
     }
 
-    private static AudioInputStream stream;
-    private static final List<Clip> CLIPS_LIST;
-
-    public static void playSound_wav(String location, float volume) {
-        CLIPS_LIST.stream().filter(Objects::nonNull).filter(clip -> clip.isOpen()).filter(clip -> !clip.isRunning()).forEach(Line::close);
-        CLIPS_LIST.stream().filter(Objects::nonNull).filter(clip -> !clip.isOpen() || !clip.isRunning()).forEach(DataLine::stop);
-        CLIPS_LIST.stream().filter(Objects::nonNull).collect(Collectors.toList()).forEach(clip -> {
-            if (!clip.isRunning()) {
-                CLIPS_LIST.remove(clip);
+    private static synchronized void cleanupStoppedClips() {
+        Iterator<Clip> iterator = ACTIVE_CLIPS.iterator();
+        while (iterator.hasNext()) {
+            Clip clip = iterator.next();
+            if (clip == null) {
+                iterator.remove();
+                continue;
             }
-        });
-        try {
-            String resourcePath = "/assets/" + Strange.get.rootRes + "/sounds/wav/" + location + ".wav";
-            InputStream inputStream = SoundUtil.class.getResourceAsStream(resourcePath);
-            BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
-            stream = AudioSystem.getAudioInputStream(bufferedInputStream);
-        } catch (Exception e) {
-            e.printStackTrace();
+
+            if (!clip.isRunning()) {
+                closeClip(clip);
+                iterator.remove();
+            }
         }
-        if (stream == null) {
+    }
+
+    private static synchronized void onClipEvent(Clip clip, LineEvent event) {
+        if (event.getType() != LineEvent.Type.STOP && event.getType() != LineEvent.Type.CLOSE) {
             return;
         }
-        try {
-            CLIPS_LIST.add(AudioSystem.getClip());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        CLIPS_LIST.stream().filter(Objects::nonNull).filter(clip -> !clip.isOpen()).forEach(clip -> {
-            try {
-                clip.open(stream);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-        CLIPS_LIST.stream().filter(Objects::nonNull).filter(Line::isOpen).forEach(clip -> {
-            float volumeVal = volume < 0.0f ? 0.0f : (volume > 1.0f ? 1.0f : volume);
-            FloatControl volumeControl = (FloatControl)clip.getControl(FloatControl.Type.MASTER_GAIN);
-            volumeControl.setValue((float)(Math.log(volumeVal) / Math.log(10.0) * 20.0));
-        });
-        CLIPS_LIST.stream().filter(Objects::nonNull).filter(Line::isOpen).filter(clip -> !clip.isRunning()).forEach(DataLine::start);
+
+        ACTIVE_CLIPS.remove(clip);
+        closeClip(clip);
     }
 
-    static {
-        CLIPS_LIST = new ArrayList<Clip>();
+    private static void closeClip(Clip clip) {
+        if (clip == null) {
+            return;
+        }
+
+        try {
+            clip.stop();
+        } catch (Exception ignored) {
+        }
+
+        try {
+            clip.close();
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static void applyVolume(Clip clip, float volume) {
+        if (clip == null || !clip.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
+            return;
+        }
+
+        float normalizedVolume = Math.max(0.0001f, Math.min(1.0f, volume));
+        FloatControl control = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+        float gain = (float) (20.0 * Math.log10(normalizedVolume));
+        control.setValue(Math.max(control.getMinimum(), Math.min(control.getMaximum(), gain)));
     }
 }

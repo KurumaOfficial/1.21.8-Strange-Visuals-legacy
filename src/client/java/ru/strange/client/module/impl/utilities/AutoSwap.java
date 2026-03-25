@@ -1,12 +1,11 @@
 package ru.strange.client.module.impl.utilities;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import org.lwjgl.glfw.GLFW;
 import ru.strange.client.event.EventInit;
 import ru.strange.client.event.impl.EventUpdate;
@@ -25,19 +24,30 @@ import ru.strange.client.module.api.setting.impl.SliderSetting;
 )
 public class AutoSwap extends Module {
 
-    private final ModeSetting from = new ModeSetting("Свап с", "Тотем", "Тотем", "Сфера");
-    private final ModeSetting to = new ModeSetting("Свап на", "Тотем", "Тотем", "Сфера");
+    private final ModeSetting from = new ModeSetting(
+            "Свап с",
+            "Тотем",
+            "Тотем",
+            "Сфера"
+    );
+
+    private final ModeSetting to = new ModeSetting(
+            "Свап на",
+            "Сфера",
+            "Тотем",
+            "Сфера"
+    );
+
     private final BindSettings swapKey = new BindSettings("Кнопка свапа", GLFW.GLFW_KEY_G);
-    private final SliderSetting delay = new SliderSetting("Задержка", 150, 100, 250, 25, false);
+    private final SliderSetting delay = new SliderSetting("Задержка", 150, 50, 400, 10, false);
 
-    private boolean swap;
-    private boolean opened;
     private boolean lastKeyState;
+    private boolean swapRequested;
 
-    private long keyCooldownTime;
-    private long swapStartTime;
+    private long requestTime;
+    private long pressCooldown;
 
-    private int pendingSlotId = -1;
+    private int pendingHotbarSlot = -1;
     private Item pendingItem = Items.AIR;
 
     public AutoSwap() {
@@ -49,102 +59,105 @@ public class AutoSwap extends Module {
         if (!enable || mc.player == null || mc.world == null || mc.interactionManager == null) return;
         if (swapKey.get() == -1) return;
 
-        boolean pressed = isKeyDown(swapKey.get());
+        long window = mc.getWindow().getHandle();
+        boolean pressed = isBindDown(window, swapKey.get());
 
         if (pressed && !lastKeyState) {
             long now = System.currentTimeMillis();
-            if (now - keyCooldownTime >= 250L) {
-                swap = true;
-                opened = false;
-                pendingSlotId = -1;
-                pendingItem = Items.AIR;
-                swapStartTime = now;
-                keyCooldownTime = now;
+            if (now - pressCooldown >= 250L) {
+                beginSwap();
+                pressCooldown = now;
             }
         }
 
         lastKeyState = pressed;
 
-        if (!swap) return;
+        if (!swapRequested) return;
 
-        // Если игрок открыл что-то кроме инвентаря — стопаем
-        if (mc.currentScreen != null && !(mc.currentScreen instanceof InventoryScreen)) {
-            resetSwap();
-            return;
-        }
-
-        ItemStack offhandStack = mc.player.getOffHandStack();
-        Item offhandItem = offhandStack.getItem();
-
-        Item fromItem = getItemByType(from.get());
-        Item toItem = getItemByType(to.get());
-
-        if (fromItem == Items.AIR || toItem == Items.AIR) {
-            resetSwap();
+        if (mc.currentScreen != null) {
+            resetSwapState();
             return;
         }
 
         if (pendingItem == Items.AIR) {
-            pendingItem = resolveTargetItem(offhandItem, fromItem, toItem);
+            pendingItem = resolveWantedOffhandItem();
 
             if (pendingItem == Items.AIR) {
-                resetSwap();
+                resetSwapState();
                 return;
             }
 
-            int slot = getBestSlotForItem(pendingItem);
-            if (slot == -1) {
-                resetSwap();
+            if (mc.player.getOffHandStack().getItem() == pendingItem) {
+                resetSwapState();
                 return;
             }
 
-            pendingSlotId = slot;
-
-            // Если предмет в обычном инвентаре — открываем инвентарь как легит
-            if (pendingSlotId <= 35 && !(mc.currentScreen instanceof InventoryScreen)) {
-                mc.setScreen(new InventoryScreen(mc.player));
-                opened = true;
-                swapStartTime = System.currentTimeMillis();
+            pendingHotbarSlot = findInHotbar(pendingItem);
+            if (pendingHotbarSlot == -1) {
+                resetSwapState();
                 return;
             }
 
-            swapStartTime = System.currentTimeMillis();
+            requestTime = System.currentTimeMillis();
+            return;
         }
 
-        if (System.currentTimeMillis() - swapStartTime < (long) delay.get()) {
+        if (System.currentTimeMillis() - requestTime < (long) delay.get()) {
             return;
         }
 
         doSwap();
     }
 
+    private void beginSwap() {
+        swapRequested = true;
+        requestTime = 0L;
+        pendingHotbarSlot = -1;
+        pendingItem = Items.AIR;
+    }
+
     private void doSwap() {
-        if (mc.player == null || mc.interactionManager == null || pendingSlotId == -1) {
-            resetSwap();
+        if (mc.player == null) {
+            resetSwapState();
             return;
         }
 
-        int syncId = mc.player.currentScreenHandler.syncId;
-
-        // Берём предмет из слота
-        mc.interactionManager.clickSlot(syncId, pendingSlotId, 0, SlotActionType.PICKUP, mc.player);
-
-        // Кладём его в оффхенд
-        mc.interactionManager.clickSlot(syncId, 45, 0, SlotActionType.PICKUP, mc.player);
-
-        // Если в курсоре остался старый предмет из оффхенда — кладём назад
-        if (!mc.player.currentScreenHandler.getCursorStack().isEmpty()) {
-            mc.interactionManager.clickSlot(syncId, pendingSlotId, 0, SlotActionType.PICKUP, mc.player);
+        if (pendingHotbarSlot < 0 || pendingHotbarSlot > 8) {
+            resetSwapState();
+            return;
         }
 
-        if (opened && mc.currentScreen instanceof InventoryScreen) {
-            mc.setScreen(null);
+        if (mc.player.getInventory().getStack(pendingHotbarSlot).getItem() != pendingItem) {
+            resetSwapState();
+            return;
         }
 
-        resetSwap();
+        int previousSelectedSlot = mc.player.getInventory().getSelectedSlot();
+        mc.player.getInventory().setSelectedSlot(pendingHotbarSlot);
+
+        if (mc.player.networkHandler != null) {
+            mc.player.networkHandler.sendPacket(new PlayerActionC2SPacket(
+                    PlayerActionC2SPacket.Action.SWAP_ITEM_WITH_OFFHAND,
+                    BlockPos.ORIGIN,
+                    Direction.DOWN
+            ));
+        }
+
+        mc.player.getInventory().setSelectedSlot(previousSelectedSlot);
+        resetSwapState();
     }
 
-    private Item resolveTargetItem(Item offhandItem, Item fromItem, Item toItem) {
+    private Item resolveWantedOffhandItem() {
+        if (mc.player == null) return Items.AIR;
+
+        Item fromItem = getItemByType(from.get());
+        Item toItem = getItemByType(to.get());
+        Item offhandItem = mc.player.getOffHandStack().getItem();
+
+        if (fromItem == Items.AIR || toItem == Items.AIR) {
+            return Items.AIR;
+        }
+
         if (fromItem == toItem) {
             return fromItem;
         }
@@ -168,31 +181,10 @@ public class AutoSwap extends Module {
         };
     }
 
-    /**
-     * Возвращает slotId для clickSlot:
-     * 0-8 hotbar -> 36-44
-     * 9-35 inventory -> 9-35
-     */
-    private int getBestSlotForItem(Item item) {
+    private int findInHotbar(Item item) {
         if (mc.player == null) return -1;
 
-        // 1. хотбар
         for (int i = 0; i < 9; i++) {
-            if (mc.player.getInventory().getStack(i).getItem() == item) {
-                return i + 36;
-            }
-        }
-
-        // 2. зачарованный стак
-        for (int i = 9; i < 36; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
-            if (stack.getItem() == item && stack.hasGlint()) {
-                return i;
-            }
-        }
-
-        // 3. обычный стак
-        for (int i = 9; i < 36; i++) {
             if (mc.player.getInventory().getStack(i).getItem() == item) {
                 return i;
             }
@@ -201,29 +193,27 @@ public class AutoSwap extends Module {
         return -1;
     }
 
-    private void resetSwap() {
-        swap = false;
-        opened = false;
-        pendingSlotId = -1;
+    private void resetSwapState() {
+        swapRequested = false;
+        requestTime = 0L;
+        pendingHotbarSlot = -1;
         pendingItem = Items.AIR;
-        swapStartTime = 0L;
     }
 
     @Override
     public void onDisable() {
-        if (opened && mc.currentScreen instanceof InventoryScreen) {
-            mc.setScreen(null);
-        }
-
-        resetSwap();
+        resetSwapState();
         lastKeyState = false;
         super.onDisable();
     }
 
-    public static boolean isKeyDown(int keyCode) {
-        return InputUtil.isKeyPressed(
-                MinecraftClient.getInstance().getWindow().getHandle(),
-                keyCode
-        );
+    private static boolean isBindDown(long window, int keyCode) {
+        if (keyCode == -1) return false;
+
+        if (BindSettings.isMouseCode(keyCode)) {
+            return GLFW.glfwGetMouseButton(window, BindSettings.toMouseButton(keyCode)) == GLFW.GLFW_PRESS;
+        }
+
+        return InputUtil.isKeyPressed(window, keyCode);
     }
 }

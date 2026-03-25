@@ -1,15 +1,16 @@
 package ru.strange.client.event;
 
+import ru.strange.client.Strange;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class EventManager {
-    private static final Map<Class<? extends Event>, List<MethodData>> REGISTRY_MAP = new  HashMap<>();
+    private static final Map<Class<? extends Event>, CopyOnWriteArrayList<MethodData>> REGISTRY_MAP = new ConcurrentHashMap<>();
 
 
     public static void register(Object object) {
@@ -20,54 +21,55 @@ public class EventManager {
     }
 
     public static void unregister(Object object) {
-        for (final List<MethodData> dataList : REGISTRY_MAP.values()) {
+        for (final CopyOnWriteArrayList<MethodData> dataList : REGISTRY_MAP.values()) {
             dataList.removeIf(data -> data.getSource().equals(object));
         }
-        cleanMap(true);
+        removeEmptyEntries();
     }
 
+    @SuppressWarnings("unchecked")
     private static void register(Method method, Object object) {
         try {
             Class<? extends Event> indexClass = (Class<? extends Event>) method.getParameterTypes()[0];
             MethodData data = new MethodData(object, method, method.getAnnotation(EventInit.class).value());
 
-            if (!data.getTarget().isAccessible()) data.getTarget().setAccessible(true);
-            if (REGISTRY_MAP.containsKey(indexClass)) {
-                if (!REGISTRY_MAP.get(indexClass).contains(data)) {
-                    REGISTRY_MAP.get(indexClass).add(data);
-                    sortListValue(indexClass);
-                }
-            } else {
-                REGISTRY_MAP.put(indexClass, new CopyOnWriteArrayList<MethodData>() {
-                    {
-                        add(data);
-                    }
-                });
+            if (!data.getTarget().canAccess(object)) {
+                data.getTarget().setAccessible(true);
             }
-            System.out.println("[EventManager] Registered: " + object.getClass().getSimpleName() 
-                    + "." + method.getName() + "(" + indexClass.getSimpleName() + ")");
+
+            CopyOnWriteArrayList<MethodData> handlers = REGISTRY_MAP.computeIfAbsent(indexClass, key -> new CopyOnWriteArrayList<>());
+            if (handlers.contains(data)) {
+                return;
+            }
+
+            handlers.add(data);
+            sortHandlers(indexClass, handlers);
+
+            Strange.LOGGER.debug("Registered event handler {}.{}({})",
+                    object.getClass().getSimpleName(),
+                    method.getName(),
+                    indexClass.getSimpleName());
         } catch (Exception e) {
-            System.err.println("Failed to register event handler: " + method.getName() + " in " + object.getClass().getName());
-            e.printStackTrace();
+            Strange.LOGGER.warn("Failed to register event handler {} in {}", method.getName(), object.getClass().getName(), e);
         }
     }
 
-    public static void cleanMap(boolean onlyEmptyEntries) {
-        Iterator<Map.Entry<Class<? extends Event>, List<MethodData>>> mapIterator = REGISTRY_MAP.entrySet().iterator();
-
-        while (mapIterator.hasNext()) {
-            if (!onlyEmptyEntries || mapIterator.next().getValue().isEmpty()) {
-                mapIterator.remove();
-            }
-        }
+    private static void removeEmptyEntries() {
+        REGISTRY_MAP.entrySet().removeIf(entry -> entry.getValue().isEmpty());
     }
 
-    private static void sortListValue(Class<? extends Event> indexClass) {
-        List<MethodData> sortedList = new CopyOnWriteArrayList<>();
+    private static void sortHandlers(Class<? extends Event> indexClass, List<MethodData> handlers) {
+        if (handlers.size() <= 1) {
+            return;
+        }
+
+        CopyOnWriteArrayList<MethodData> sortedList = new CopyOnWriteArrayList<>();
 
         for (final byte priority : Priority.VALUE_ARRAY) {
-            for (final MethodData data : REGISTRY_MAP.get(indexClass)) {
-                if (data.getPriority() == priority) sortedList.add(data);
+            for (final MethodData data : handlers) {
+                if (data.getPriority() == priority) {
+                    sortedList.add(data);
+                }
             }
         }
 
@@ -78,35 +80,24 @@ public class EventManager {
         return method.getParameterTypes().length != 1 || !method.isAnnotationPresent(EventInit.class);
     }
 
-    private static boolean isMethodBad(Method method, Class<? extends Event> eventClass) {
-        return isMethodBad(method) || !method.getParameterTypes()[0].equals(eventClass);
-    }
-
-    private static boolean debugLogged = false;
-    private static int renderEventCalls = 0;
-    
-    public static void printRegistryStatus() {
-//        System.out.println("[EventManager] === REGISTRY STATUS ===");
-//        System.out.println("[EventManager] Total event types: " + REGISTRY_MAP.size());
-//        for (var entry : REGISTRY_MAP.entrySet()) {
-//            System.out.println("[EventManager]   " + entry.getKey().getSimpleName() + ": " + entry.getValue().size() + " handlers");
-//        }
-//        System.out.println("[EventManager] ======================");
-    }
-    
     public static Event call(Event event) {
         List<MethodData> dataList = REGISTRY_MAP.get(event.getClass());
 
+        if (dataList == null) {
+            return event;
+        }
 
-        if (dataList != null) {
-            if (event instanceof EventStoppable) {
-                EventStoppable stoppable = (EventStoppable) event;
-                
-                for (final MethodData data : dataList) {
-                    invoke(data, event);
-                    if (stoppable.isStopped()) break;
+        if (event instanceof EventStoppable stoppable) {
+            for (final MethodData data : dataList) {
+                invoke(data, event);
+                if (stoppable.isStopped()) {
+                    break;
                 }
-            } else for (final MethodData data : dataList) invoke(data, event);
+            }
+        } else {
+            for (final MethodData data : dataList) {
+                invoke(data, event);
+            }
         }
 
         return event;
@@ -116,16 +107,16 @@ public class EventManager {
         try {
             data.getTarget().invoke(data.getSource(), argument);
         } catch (IllegalAccessException | IllegalArgumentException e) {
-            System.err.println("[EventManager] Failed to invoke " + data.getTarget().getName() 
-                    + " on " + data.getSource().getClass().getSimpleName() + ": " + e.getMessage());
+            Strange.LOGGER.warn("Failed to invoke {} on {}",
+                    data.getTarget().getName(),
+                    data.getSource().getClass().getSimpleName(),
+                    e);
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
-            System.err.println("[EventManager] Exception in handler " + data.getTarget().getName() 
-                    + " on " + data.getSource().getClass().getSimpleName() + ": " 
-                    + (cause != null ? cause.getMessage() : e.getMessage()));
-            if (cause != null) {
-                cause.printStackTrace();
-            }
+            Strange.LOGGER.warn("Exception in handler {} on {}",
+                    data.getTarget().getName(),
+                    data.getSource().getClass().getSimpleName(),
+                    cause != null ? cause : e);
         }
     }
 
@@ -136,7 +127,7 @@ public class EventManager {
         private final Method target;
         private final byte priority;
 
-        public MethodData(Object source, Method target, byte priority){
+        private MethodData(Object source, Method target, byte priority) {
             this.source = source;
             this.target = target;
             this.priority = priority;
@@ -169,4 +160,3 @@ public class EventManager {
 
     }
 }
-

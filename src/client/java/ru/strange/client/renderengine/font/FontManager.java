@@ -4,6 +4,7 @@ import me.x150.renderer.fontng.FTLibrary;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import ru.strange.client.Strange;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,6 +15,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class FontManager implements AutoCloseable {
+    private static final String DEFAULT_FAMILY_NAME = "default";
+    private static final String BUNDLED_DEFAULT_FONT = "strange:fonts/medium.ttf";
     private static FontManager instance;
     private final FTLibrary library;
 
@@ -43,10 +46,10 @@ public class FontManager implements AutoCloseable {
 
     private void loadDefaultFonts() {
         try {
-            loadFontFromResources("minecraft", "minecraft:font/minecraft.ttf");
+            loadFontFromResources(DEFAULT_FAMILY_NAME, BUNDLED_DEFAULT_FONT);
         } catch (Exception e) {
-            System.err.println("Failed to load Minecraft font, loading system fallback");
-            loadSystemFont("default");
+            Strange.LOGGER.warn("Failed to load bundled default font, falling back to system font", e);
+            loadSystemFont(DEFAULT_FAMILY_NAME);
         }
     }
 
@@ -103,19 +106,19 @@ public class FontManager implements AutoCloseable {
     public FontFamily getFamilyOrDefault(@NotNull String familyName) {
         FontFamily family = families.get(familyName);
         if (family == null) {
-            family = families.get("default");
-            if (family == null) {
-                throw new IllegalStateException("No default font family loaded");
-            }
+            family = getDefaultFamily();
         }
         return family;
     }
 
     @NotNull
     public FontFamily getDefaultFamily() {
-        FontFamily family = families.get("minecraft");
+        FontFamily family = families.get(DEFAULT_FAMILY_NAME);
         if (family == null) {
-            family = families.get("default");
+            family = families.get("medium");
+        }
+        if (family == null) {
+            family = families.get("minecraft");
         }
         if (family == null) {
             throw new IllegalStateException("No default font family loaded");

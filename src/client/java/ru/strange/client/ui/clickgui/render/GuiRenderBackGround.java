@@ -1,8 +1,8 @@
 package ru.strange.client.ui.clickgui.render;
 
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.util.Identifier;
 import ru.strange.client.Strange;
+import ru.strange.client.localization.ModLocalization;
 import ru.strange.client.module.Theme;
 import ru.strange.client.module.ThemeManager;
 import ru.strange.client.ui.clickgui.GuiScreen;
@@ -17,8 +17,8 @@ public class GuiRenderBackGround extends GuiScreen {
         RenderUtil.Shadow.draw(ctx, x - 2, y - 2, width, height, 8,12,new Color(0x40000000, true).getRGB());
         if (theme) RenderUtil.Blur.draw(ctx, x, y, width, height, 8, 20, new Color(255,255,255));
         RenderUtil.Round.draw(ctx, x, y, width, height, 8,  theme ? RenderUtil.ColorUtil.replAlpha(RenderUtil.ColorUtil.getBackGroundColor(1,1), 127) : RenderUtil.ColorUtil.getBackGroundColor(1,1));
-        RenderUtil.Image.draw(ctx, Identifier.of(Strange.rootRes, "/icons/gui/logo.png"), x + 8, y + 8, 16, 16, RenderUtil.ColorUtil.replAlpha(RenderUtil.ColorUtil.getTextColor(1,1),204));
+        RenderUtil.Image.draw(ctx, Strange.id("icons/gui/logo.png"), x + 8, y + 8, 16, 16, RenderUtil.ColorUtil.replAlpha(RenderUtil.ColorUtil.getTextColor(1,1),204));
         FontDraw.drawText(FontDraw.FontType.MEDIUM, ctx, Strange.name, x + 28, y + 15, 8, RenderUtil.ColorUtil.replAlpha(RenderUtil.ColorUtil.getTextColor(1,1), 204));
-        FontDraw.drawText(FontDraw.FontType.MEDIUM, ctx, "FREE", x + 28, y + 22, 5, RenderUtil.ColorUtil.replAlpha(RenderUtil.ColorUtil.getTextColor(1,1), 127));
+        FontDraw.drawText(FontDraw.FontType.MEDIUM, ctx, ModLocalization.raw("FREE"), x + 28, y + 22, 5, RenderUtil.ColorUtil.replAlpha(RenderUtil.ColorUtil.getTextColor(1,1), 127));
     }
 }

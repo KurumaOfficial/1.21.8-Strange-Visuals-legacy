@@ -1,5 +1,6 @@
 package ru.strange.client.utils.math.animation.anim;
 
+import ru.strange.client.Strange;
 import ru.strange.client.utils.math.animation.anim.bezier.Bezier;
 import ru.strange.client.utils.math.animation.anim.bezier.list.CubicBezier;
 import ru.strange.client.utils.math.animation.anim.util.Easing;
@@ -42,14 +43,14 @@ public class Animation {
     public Animation animate(double valueTo, double duration, Easing easing, boolean safe) {
         if (this.check(safe, valueTo)) {
             if (this.isDebug()) {
-                System.out.println("Animate cancelled due to target val equals from val");
+                Strange.LOGGER.debug("Animation skipped because the target value already matches the current state");
             }
 
             return this;
         } else {
             this.setType(AnimationType.EASING).setEasing(easing).setDuration(duration * 1000.0).setStart(System.currentTimeMillis()).setFromValue(this.getValue()).setToValue(valueTo);
             if (this.isDebug()) {
-                System.out.println("#animate {\n    to value: " + this.getToValue() + "\n    from value: " + this.getValue() + "\n    duration: " + this.getDuration() + "\n}");
+                Strange.LOGGER.debug("Animation start: from={}, to={}, durationMs={}, type={}", this.getValue(), this.getToValue(), this.getDuration(), AnimationType.EASING);
             }
 
             return this;
@@ -59,14 +60,14 @@ public class Animation {
     public Animation animate(double valueTo, double duration, Bezier bezier, boolean safe) {
         if (this.check(safe, valueTo)) {
             if (this.isDebug()) {
-                System.out.println("Animate cancelled due to target val equals from val");
+                Strange.LOGGER.debug("Animation skipped because the target value already matches the current state");
             }
 
             return this;
         } else {
             this.setType(AnimationType.BEZIER).setBezier(bezier).setDuration(duration * 1000.0).setStart(System.currentTimeMillis()).setFromValue(this.getValue()).setToValue(valueTo);
             if (this.isDebug()) {
-                System.out.println("#animate {\n    to value: " + this.getToValue() + "\n    from value: " + this.getValue() + "\n    duration: " + this.getDuration() + "\n    type: " + this.getType().name() + "\n}");
+                Strange.LOGGER.debug("Animation start: from={}, to={}, durationMs={}, type={}", this.getValue(), this.getToValue(), this.getDuration(), this.getType().name());
             }
 
             return this;

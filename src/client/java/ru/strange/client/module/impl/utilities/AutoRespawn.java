@@ -8,9 +8,11 @@ import ru.strange.client.module.api.IModule;
 import ru.strange.client.module.api.Module;
 import ru.strange.client.module.api.setting.impl.BooleanSetting;
 
+import java.util.Locale;
+
 @IModule(
         name = "Авто респавн",
-        description = "",
+        description = "Автоматический респавн с показом координат смерти",
         category = Category.Utilities,
         bind = -1
 )
@@ -47,6 +49,7 @@ public class AutoRespawn extends Module {
         if (mc.player == null) return;
 
         String coords = String.format(
+                Locale.US,
                 "Координаты смерти: %.1f, %.1f, %.1f",
                 mc.player.getX(),
                 mc.player.getY(),

@@ -2,7 +2,6 @@ package ru.strange.client.utils.render;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.GameMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -14,10 +13,7 @@ public class RenderPlayer implements Helper {
         ClientPlayerEntity player = mc.player;
         if (player == null) return;
 
-        int x2 = screen.width - 25;
-        int x1 = x2 - 450;
-        int y1 = 35;
-        int y2 = y1 + 320;
+        PauseMenuPreviewLayout.Bounds bounds = PauseMenuPreviewLayout.getPreviewBounds(screen);
 
         int size = 55;
 
@@ -25,7 +21,7 @@ public class RenderPlayer implements Helper {
 
         InventoryScreen.drawEntity(
                 context,
-                x1, y1, x2, y2,
+                bounds.x1(), bounds.y1(), bounds.x2(), bounds.y2(),
                 size,
                 scale,
                 (float) mouseX, (float) mouseY,

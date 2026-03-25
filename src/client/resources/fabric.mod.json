@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
   "id": "strange-visuals",
-  "version": "v1",
+  "version": "1.5.0",
   "name": "Strange Visuals",
-  "description": "Самый лучший визуальный клиент для любимых юзеров ❤️",
+  "description": "Custom visuals client for Strange Visuals users.",
   "authors": ["strange"],
   "contact": {},
-  "license": "Все права защищены!",
+  "license": "All rights reserved.",
   "icon": "assets/icon.png",
   "environment": "client",
   "entrypoints": {
@@ -14,7 +14,8 @@
       "ru.strange.client.StrangeDataGenerator"
     ],
     "client": [
-      "ru.strange.client.Strange"
+      "ru.strange.client.Strange",
+      "ru.strange.client.StarterMenu.StrangeVisualsClient"
     ]
   },
   "mixins": [

@@ -9,10 +9,14 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import ru.strange.client.Strange;
 import ru.strange.client.event.EventManager;
 import ru.strange.client.event.impl.EventLook;
 import ru.strange.client.event.impl.EventMouseInput;
 import ru.strange.client.event.impl.EventMouseScroll;
+import ru.strange.client.module.api.Module;
+import ru.strange.client.module.api.setting.Setting;
+import ru.strange.client.module.api.setting.impl.BindSettings;
 import ru.strange.client.utils.other.FreeLookHandler;
 
 @Mixin(Mouse.class)
@@ -24,11 +28,34 @@ public abstract class MouseMixin {
             return;
         }
 
+        MinecraftClient mc = MinecraftClient.getInstance();
+
+        if (handleModuleMouseBindCapture(button)) {
+            ci.cancel();
+            return;
+        }
+
+        if (handleSettingMouseBindCapture(button)) {
+            ci.cancel();
+            return;
+        }
+
+        if (mc.currentScreen != null) {
+            return;
+        }
+
         EventMouseInput event = new EventMouseInput(window, button, action, modifiers);
         EventManager.call(event);
 
         if (event.isCancelled()) {
             ci.cancel();
+            return;
+        }
+        if (mc.player != null) {
+            int bindCode = BindSettings.mouseCode(button);
+            for (Module m : Strange.get.manager.getBind(bindCode)) {
+                m.toggle();
+            }
         }
     }
 
@@ -59,5 +86,35 @@ public abstract class MouseMixin {
         if (!event.isCancelled()) {
             player.changeLookDirection(event.yaw, event.pitch);
         }
+    }
+
+    private boolean handleModuleMouseBindCapture(int button) {
+        for (Module module : Strange.get.manager.getModules()) {
+            if (!module.binding) continue;
+
+            module.bind = BindSettings.mouseCode(button);
+            module.binding = false;
+            module.displayName = module.name;
+
+            if (ru.strange.client.Strange.get != null && ru.strange.client.Strange.get.configManager != null) {
+                ru.strange.client.Strange.get.configManager.autoSave();
+            }
+
+            return true;
+        }
+        return false;
+    }
+
+    private boolean handleSettingMouseBindCapture(int button) {
+        for (Module module : Strange.get.manager.getModules()) {
+            for (Setting setting : module.getSettings()) {
+                if (setting instanceof BindSettings bind && bind.active) {
+                    bind.set(BindSettings.mouseCode(button));
+                    bind.active = false;
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

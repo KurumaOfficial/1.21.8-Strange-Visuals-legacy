@@ -39,7 +39,7 @@ public abstract class GlyphBufferMixin {
 
     @ModifyConstant(
             method = "lambda$draw$1",
-            constant = @Constant(intValue = -16777216), // 0xFF000000 Ð² signed int
+            constant = @Constant(intValue = -16777216), // 0xFF000000 as signed int
             remap = false,
             require = 0
     )

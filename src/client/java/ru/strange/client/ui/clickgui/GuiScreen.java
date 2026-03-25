@@ -77,8 +77,19 @@ public class GuiScreen {
                     if (s.opened) up1 += s.settings.size() * 6;
                     up1 += heightSettings + 4;
                 }
+                if (setting instanceof ListSetting) {
+                    ListSetting s = (ListSetting) setting;
+                    if (s.hidden.get()) continue;
+                    if (s.opened) up1 += s.list.size() * 6;
+                    up1 += heightSettings + 4;
+                }
                 if (setting instanceof BindSettings) {
                     BindSettings s = (BindSettings) setting;
+                    if (s.hidden.get()) continue;
+                    up1 += heightSettings + 4;
+                }
+                if (setting instanceof ButtonSetting) {
+                    ButtonSetting s = (ButtonSetting) setting;
                     if (s.hidden.get()) continue;
                     up1 += heightSettings + 4;
                 }
@@ -123,8 +134,19 @@ public class GuiScreen {
                     if (s.opened) up2 += s.settings.size() * 6;
                     up2 += heightSettings + 4;
                 }
+                if (setting instanceof ListSetting) {
+                    ListSetting s = (ListSetting) setting;
+                    if (s.hidden.get()) continue;
+                    if (s.opened) up2 += s.list.size() * 6;
+                    up2 += heightSettings + 4;
+                }
                 if (setting instanceof BindSettings) {
                     BindSettings s = (BindSettings) setting;
+                    if (s.hidden.get()) continue;
+                    up2 += heightSettings + 4;
+                }
+                if (setting instanceof ButtonSetting) {
+                    ButtonSetting s = (ButtonSetting) setting;
                     if (s.hidden.get()) continue;
                     up2 += heightSettings + 4;
                 }

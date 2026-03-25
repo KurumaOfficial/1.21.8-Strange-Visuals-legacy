@@ -1,5 +1,7 @@
 package ru.strange.client.module;
 
+import ru.strange.client.ui.clickgui.localization.GuiLocalization;
+
 import java.awt.*;
 
 public enum Theme {
@@ -52,7 +54,7 @@ public enum Theme {
         this.text = text;
     }
 
-    public String getName() { return name; }
+    public String getName() { return GuiLocalization.themeName(this, name); }
     public Color getMain() { return main; }
     public Color getBg() { return bg; }
     public Color getText() { return text; }

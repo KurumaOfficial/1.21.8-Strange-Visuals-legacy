@@ -10,12 +10,22 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.strange.client.event.EventManager;
 import ru.strange.client.event.impl.EventAttack;
+import ru.strange.client.utils.combat.AttackTracker;
 
 @Environment(EnvType.CLIENT)
 @Mixin(net.minecraft.client.network.ClientPlayerInteractionManager.class)
 public abstract class ClientPlayerInteractionManagerMixin {
-    @Inject(method = "attackEntity", at = @At("HEAD"))
+    @Inject(method = "attackEntity", at = @At("HEAD"), cancellable = true)
     private void onAttackEntity(PlayerEntity player, Entity target, CallbackInfo ci) {
-        EventManager.call(new EventAttack(target));
+        EventAttack event = EventAttack.attempt(target);
+        EventManager.call(event);
+        if (event.isCancelled()) {
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = "attackEntity", at = @At("TAIL"))
+    private void onAttackEntityTail(PlayerEntity player, Entity target, CallbackInfo ci) {
+        AttackTracker.getInstance().trackExecutedAttack(target);
     }
 }

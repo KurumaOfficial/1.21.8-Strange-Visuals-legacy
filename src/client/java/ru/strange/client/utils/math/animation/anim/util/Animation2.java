@@ -1,5 +1,6 @@
 package ru.strange.client.utils.math.animation.anim.util;
 
+import ru.strange.client.Strange;
 
 public class Animation2 {
 
@@ -28,7 +29,7 @@ public class Animation2 {
     public Animation2 run(double valueTo, double duration, Easing easing, boolean safe) {
         if (this.check(safe, valueTo)) {
             if (this.isDebug()) {
-                System.out.println("Animate cancelled due to target val equals from val");
+                Strange.LOGGER.debug("Animation skipped because the target value already matches the current state");
             }
         } else {
             this.setEasing(easing)
@@ -38,9 +39,7 @@ public class Animation2 {
                     .setToValue(valueTo);
 
             if (this.isDebug()) {
-                System.out.println("#animate {\n    to value: " + this.getToValue() +
-                        "\n    from value: " + this.getValue() +
-                        "\n    duration: " + this.getDuration() + "\n}");
+                Strange.LOGGER.debug("Animation start: from={}, to={}, durationMs={}", this.getValue(), this.getToValue(), this.getDuration());
             }
         }
         return this;

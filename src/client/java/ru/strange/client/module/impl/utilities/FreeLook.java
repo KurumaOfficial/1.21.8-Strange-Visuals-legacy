@@ -1,8 +1,6 @@
 package ru.strange.client.module.impl.utilities;
 
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.Perspective;
-import net.minecraft.client.util.InputUtil;
 import org.lwjgl.glfw.GLFW;
 import ru.strange.client.event.EventInit;
 import ru.strange.client.event.impl.EventUpdate;
@@ -11,6 +9,7 @@ import ru.strange.client.module.api.IModule;
 import ru.strange.client.module.api.Module;
 import ru.strange.client.module.api.setting.impl.BindSettings;
 import ru.strange.client.module.api.setting.impl.BooleanSetting;
+import ru.strange.client.utils.other.BindUtil;
 import ru.strange.client.utils.other.FreeLookHandler;
 
 @IModule(
@@ -36,7 +35,7 @@ public class FreeLook extends Module {
         if (!enable || mc.player == null || mc.world == null) return;
         if (mc.currentScreen != null || key.get() == -1) return;
 
-        boolean pressed = isKeyDown(key.get());
+        boolean pressed = BindUtil.isDown(key.get());
 
         if (pressed) {
             if (!holding) {
@@ -44,7 +43,6 @@ public class FreeLook extends Module {
                 onPress();
             }
 
-            // держим игрока залоченным
             FreeLookHandler.tick();
         } else {
             if (holding) {
@@ -85,12 +83,5 @@ public class FreeLook extends Module {
 
         FreeLookHandler.setActive(false);
         super.onDisable();
-    }
-
-    public static boolean isKeyDown(int keyCode) {
-        return InputUtil.isKeyPressed(
-                MinecraftClient.getInstance().getWindow().getHandle(),
-                keyCode
-        );
     }
 }

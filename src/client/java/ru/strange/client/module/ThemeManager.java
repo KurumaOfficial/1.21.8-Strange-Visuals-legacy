@@ -16,7 +16,7 @@ public class ThemeManager {
         previousTheme = currentTheme;
         currentTheme = theme;
         animation = 0.0f;
-        
+
         if (Strange.get != null && Strange.get.configManager != null) {
             Strange.get.configManager.autoSave();
         }

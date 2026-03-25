@@ -52,10 +52,10 @@ dependencies {
 
     include(implementation("org.json:json:20090211"))
 
-    // MixinExtras - include для включения в jar
+    // Bundle MixinExtras into the final jar.
     include(implementation("io.github.llamalad7:mixinextras-fabric:0.4.1"))
-    
-    // LWJGL Harfbuzz - include для включения в jar
+
+    // Bundle LWJGL Harfbuzz into the final jar.
     include(implementation("org.lwjgl:lwjgl-harfbuzz:3.3.3"))
     include(runtimeOnly("org.lwjgl:lwjgl-harfbuzz:3.3.3:natives-windows"))
     include(runtimeOnly("org.lwjgl:lwjgl-harfbuzz:3.3.3:natives-linux"))
@@ -66,9 +66,22 @@ processResources {
     inputs.property "version", project.version
     inputs.property "minecraft_version", project.minecraft_version
     inputs.property "loader_version", project.loader_version
-    filteringCharset "UTF-8"
+    filteringCharset = "UTF-8"
 
-    filesMatching("fabric.mod.json") {
+    filesMatching(["fabric.mod.json", "strange.version"]) {
+        expand "version": project.version,
+                "minecraft_version": project.minecraft_version,
+                "loader_version": project.loader_version
+    }
+}
+
+processClientResources {
+    inputs.property "version", project.version
+    inputs.property "minecraft_version", project.minecraft_version
+    inputs.property "loader_version", project.loader_version
+    filteringCharset = "UTF-8"
+
+    filesMatching(["fabric.mod.json", "strange.version"]) {
         expand "version": project.version,
                 "minecraft_version": project.minecraft_version,
                 "loader_version": project.loader_version
@@ -98,9 +111,11 @@ java {
     withSourcesJar()
 }
 
+def licenseArchiveName = project.archives_base_name
+
 jar {
     from("LICENSE") {
-        rename { "${it}_${project.archives_base_name}" }
+        rename { "${it}_${licenseArchiveName}" }
     }
 }
 

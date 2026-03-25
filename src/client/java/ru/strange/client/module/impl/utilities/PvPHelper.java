@@ -1,8 +1,6 @@
 package ru.strange.client.module.impl.utilities;
 
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
-import net.minecraft.client.util.InputUtil;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -14,14 +12,18 @@ import ru.strange.client.module.api.Category;
 import ru.strange.client.module.api.IModule;
 import ru.strange.client.module.api.Module;
 import ru.strange.client.module.api.setting.impl.BindSettings;
+import ru.strange.client.utils.other.BindUtil;
 
 @IModule(
         name = "ПвП Хелпер",
-        description = "",
+        description = "Быстрый свап элитры/нагрудника и переключение на пёрл",
         category = Category.Utilities,
         bind = -1
 )
 public class PvPHelper extends Module {
+
+    /** Индекс слота нагрудника в {@code playerScreenHandler} (стандарт инвентаря Minecraft). */
+    private static final int CHEST_ARMOR_SLOT = 6;
 
     private final BindSettings pearlBind = new BindSettings("Бинд на пёрл", GLFW.GLFW_KEY_P);
     private final BindSettings elytraBind = new BindSettings("Бинд на элитру", GLFW.GLFW_KEY_Y);
@@ -37,9 +39,7 @@ public class PvPHelper extends Module {
     public void onUpdate(EventUpdate event) {
         if (!enable || mc.player == null || mc.world == null || mc.interactionManager == null) return;
 
-        long window = mc.getWindow().getHandle();
-
-        boolean pearlDown = isKeyDown(window, pearlBind.get());
+        boolean pearlDown = BindUtil.isDown(pearlBind.get());
         if (pearlDown && !pearlLatch) {
             switchToItem(Items.ENDER_PEARL);
             pearlLatch = true;
@@ -47,9 +47,9 @@ public class PvPHelper extends Module {
             pearlLatch = false;
         }
 
-        boolean elytraDown = isKeyDown(window, elytraBind.get());
+        boolean elytraDown = BindUtil.isDown(elytraBind.get());
         if (elytraDown && !elytraLatch) {
-            toggleElytraChestSwapIfOpen();
+            toggleElytraChestSwapHotbarOnly();
             elytraLatch = true;
         } else if (!elytraDown) {
             elytraLatch = false;
@@ -59,51 +59,57 @@ public class PvPHelper extends Module {
     private void switchToItem(Item item) {
         if (mc.player == null) return;
 
-        for (int i = 0; i < 9; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
-            if (!stack.isEmpty() && stack.getItem() == item) {
-                mc.player.getInventory().setSelectedSlot(i);
-                break;
-            }
+        int slot = findInHotbar(item);
+        if (slot != -1) {
+            mc.player.getInventory().setSelectedSlot(slot);
         }
     }
 
-    /**
-     * Легитная замена:
-     * работает только если открыт инвентарь
-     */
-    private void toggleElytraChestSwapIfOpen() {
+    private void toggleElytraChestSwapHotbarOnly() {
         if (mc.player == null || mc.interactionManager == null) return;
 
-        if (!(mc.currentScreen instanceof HandledScreen<?>)) return;
-        if (!(mc.currentScreen instanceof InventoryScreen)) return;
-        if (mc.player.currentScreenHandler != mc.player.playerScreenHandler) return;
+        // Открываем инвентарь программно если он не открыт
+        boolean openedByModule = false;
+        if (!(mc.currentScreen instanceof InventoryScreen)) {
+            mc.setScreen(new InventoryScreen(mc.player));
+            openedByModule = true;
+        }
 
-        int chestSlotId = 6;
+        if (mc.player.currentScreenHandler != mc.player.playerScreenHandler) {
+            if (openedByModule) mc.setScreen(null);
+            return;
+        }
 
-        if (chestSlotId < 0 || chestSlotId >= mc.player.playerScreenHandler.slots.size()) return;
+        int chestSlotId = CHEST_ARMOR_SLOT;
+        if (chestSlotId < 0 || chestSlotId >= mc.player.playerScreenHandler.slots.size()) {
+            if (openedByModule) mc.setScreen(null);
+            return;
+        }
 
         ItemStack chestStack = mc.player.playerScreenHandler.getSlot(chestSlotId).getStack();
         boolean wearingElytra = !chestStack.isEmpty() && chestStack.getItem() == Items.ELYTRA;
 
         if (!wearingElytra) {
-            int elytraInvIndex = findBestInventoryIndex(Items.ELYTRA);
-            if (elytraInvIndex == -1) return;
+            int elytraIndex = findInInventory(Items.ELYTRA);
+            if (elytraIndex == -1) {
+                if (openedByModule) mc.setScreen(null);
+                return;
+            }
 
-            int sourceSlotId = inventoryIndexToSlotId(elytraInvIndex);
-            if (sourceSlotId == -1) return;
-
+            int sourceSlotId = elytraIndex < 9 ? 36 + elytraIndex : 9 + (elytraIndex - 9);
             swapSlots(sourceSlotId, chestSlotId);
-            return;
+        } else {
+            int chestplateIndex = findBestChestplateIndex();
+            if (chestplateIndex == -1) {
+                if (openedByModule) mc.setScreen(null);
+                return;
+            }
+
+            int sourceSlotId = chestplateIndex < 9 ? 36 + chestplateIndex : 9 + (chestplateIndex - 9);
+            swapSlots(sourceSlotId, chestSlotId);
         }
 
-        int chestplateInvIndex = findBestChestplateIndex();
-        if (chestplateInvIndex == -1) return;
-
-        int sourceSlotId = inventoryIndexToSlotId(chestplateInvIndex);
-        if (sourceSlotId == -1) return;
-
-        swapSlots(sourceSlotId, chestSlotId);
+        if (openedByModule) mc.setScreen(null);
     }
 
     private void swapSlots(int slotA, int slotB) {
@@ -116,7 +122,7 @@ public class PvPHelper extends Module {
         mc.interactionManager.clickSlot(syncId, slotA, 0, SlotActionType.PICKUP, mc.player);
     }
 
-    private int findBestInventoryIndex(Item item) {
+    private int findInHotbar(Item item) {
         if (mc.player == null) return -1;
 
         for (int i = 0; i < 9; i++) {
@@ -126,16 +132,35 @@ public class PvPHelper extends Module {
             }
         }
 
+        return -1;
+    }
+
+    /**
+     * Ищет предмет во всём инвентаре игрока (хотбар + основной инвентарь).
+     * @return индекс в getInventory().getStack() (0-8 = хотбар, 9-35 = основной)
+     */
+    private int findInInventory(Item item) {
+        if (mc.player == null) return -1;
+
+        // Сначала ищем в хотбаре (приоритет)
+        for (int i = 0; i < 9; i++) {
+            ItemStack stack = mc.player.getInventory().getStack(i);
+            if (!stack.isEmpty() && stack.getItem() == item) return i;
+        }
+
+        // Затем в основном инвентаре
         for (int i = 9; i < 36; i++) {
             ItemStack stack = mc.player.getInventory().getStack(i);
-            if (!stack.isEmpty() && stack.getItem() == item) {
-                return i;
-            }
+            if (!stack.isEmpty() && stack.getItem() == item) return i;
         }
 
         return -1;
     }
 
+    /**
+     * Ищет лучший нагрудник во всём инвентаре.
+     * @return индекс в getInventory().getStack()
+     */
     private int findBestChestplateIndex() {
         if (mc.player == null) return -1;
 
@@ -151,9 +176,6 @@ public class PvPHelper extends Module {
             if (!isChestplate(item)) continue;
 
             int score = getChestplateScore(item);
-
-            if (i < 9) score += 50;
-
             if (score > bestScore) {
                 bestScore = score;
                 bestIndex = i;
@@ -182,18 +204,4 @@ public class PvPHelper extends Module {
         return 0;
     }
 
-    private int inventoryIndexToSlotId(int inventoryIndex) {
-        if (inventoryIndex >= 0 && inventoryIndex < 9) {
-            return 36 + inventoryIndex;
-        }
-        if (inventoryIndex >= 9 && inventoryIndex < 36) {
-            return inventoryIndex;
-        }
-        return -1;
-    }
-
-    private static boolean isKeyDown(long window, int keyCode) {
-        if (keyCode == -1) return false;
-        return InputUtil.isKeyPressed(window, keyCode);
-    }
 }

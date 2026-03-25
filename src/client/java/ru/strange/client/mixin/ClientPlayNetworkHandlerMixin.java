@@ -1,24 +1,31 @@
 package ru.strange.client.mixin;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.Entity;
+import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import ru.strange.client.module.impl.world.GpsNavigator;
+import ru.strange.client.event.EventManager;
+import ru.strange.client.event.impl.EventTotemPop;
 
-@Environment(EnvType.CLIENT)
-@Mixin(ClientPlayNetworkHandler.class)
+@Mixin(net.minecraft.client.network.ClientPlayNetworkHandler.class)
 public abstract class ClientPlayNetworkHandlerMixin {
 
-    @Inject(method = "sendChatMessage", at = @At("HEAD"), cancellable = true)
-    private void strange$onSendChatMessage(String content, CallbackInfo ci) {
-        // Если .gps обработан нашим модулем – не отправляем это сообщение на сервер
-        if (GpsNavigator.handleChat(content)) {
-            ci.cancel();
+    @Shadow
+    private ClientWorld world;
+
+    @Inject(method = "onEntityStatus", at = @At("TAIL"))
+    private void strange$trackTotemPop(EntityStatusS2CPacket packet, CallbackInfo ci) {
+        if (packet == null || world == null || packet.getStatus() != 35) {
+            return;
+        }
+
+        Entity entity = packet.getEntity(world);
+        if (entity != null) {
+            EventManager.call(new EventTotemPop(entity));
         }
     }
 }
-

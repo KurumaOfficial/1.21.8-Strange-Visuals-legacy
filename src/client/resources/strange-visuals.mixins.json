@@ -11,6 +11,7 @@
     "WorldRendererMixin",
     "GameRendererMixin",
     "ClientPlayerInteractionManagerMixin",
+    "ClientPlayNetworkHandlerMixin",
     "MinecraftClientMixin",
     "ClientPlayerEntityMixin",
     "GlyphBufferAlphaFixMixin",
@@ -27,7 +28,23 @@
     "GameMenuScreenButtonsMixin",
     "PlayerListEntryMixin",
     "SpiderEntityModelMixin",
-    "CameraMixin"
+    "CameraMixin",
+    "ServerRestrictionMixin",
+    "ChatHudMixin",
+    "ChatScreenMixin",
+    "ScreenBackgroundMixin",
+    "DownloadingTerrainScreenMixin",
+    "MessageScreenMixin",
+    "SplashOverlayMixin",
+    "EntityRendererMixin",
+    "FogRendererMixin",
+    "accessor.ClientWorldAccessor",
+    "accessor.LivingEntityAccessor",
+    "accessor.ChatHudAccessor",
+    "accessor.ItemCooldownManagerAccessor",
+    "accessor.ItemCooldownEntryAccessor",
+    "ItemEntityRendererMixin"
+
   ],
   "injectors": {
     "defaultRequire": 1

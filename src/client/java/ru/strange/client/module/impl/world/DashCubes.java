@@ -8,12 +8,15 @@ import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.BufferAllocator;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
 import org.joml.Matrix4f;
 import ru.strange.client.event.EventInit;
 import ru.strange.client.event.impl.EventChangeWorld;
@@ -27,6 +30,8 @@ import ru.strange.client.module.api.setting.impl.BooleanSetting;
 import ru.strange.client.module.api.setting.impl.HueSetting;
 import ru.strange.client.module.api.setting.impl.ModeSetting;
 import ru.strange.client.module.api.setting.impl.SliderSetting;
+import ru.strange.client.renderengine.renderers.util.ShaderThemePreset;
+import ru.strange.client.renderengine.renderers.util.ShaderThemeVisuals;
 import ru.strange.client.utils.math.MathHelper;
 import ru.strange.client.utils.render.RenderUtil;
 
@@ -52,8 +57,12 @@ public class DashCubes extends Module {
     public static HueSetting colorSetting = new HueSetting("Цвет", new Color(131, 166, 232));
     public static ModeSetting colorMode = new ModeSetting("Режим цвета", "Client", "Client", "RGB", "Astolfo", "Random");
 
+    public static BooleanSetting shaderColors = new BooleanSetting("Shader Colors", false);
+    public static ModeSetting shaderTheme = new ModeSetting("Shader Theme", ShaderThemePreset.COSMOS.displayName(), ShaderThemePreset.names())
+            .hidden(() -> !shaderColors.get());
+
     public DashCubes() {
-        addSettings(count, jumping, allEntity, colorSetting, colorMode);
+        addSettings(count, jumping, allEntity, colorSetting, colorMode, shaderColors, shaderTheme);
     }
 
     private static final int RES_PX = 16;
@@ -130,6 +139,8 @@ public class DashCubes extends Module {
         List<LivingEntity> entities = mc.world.getPlayers().stream()
                 .filter(Objects::nonNull)
                 .filter(entity -> entity.isAlive())
+                .filter(entity -> !entity.isRemoved())
+                .filter(entity -> !entity.isInvisible())
                 .filter(entity -> {
                     if (!allEntity.get()) {
                         return entity == mc.player;
@@ -149,7 +160,7 @@ public class DashCubes extends Module {
 
             List<GenBox> candidates = new ArrayList<>();
             for (BlockPos pos : getPlaceableAround(entity, SPAWN_MIN_DST, SPAWN_MAX_DST, 3)) {
-                GenBox box = findRandomPointInBlock(pos, entityPos, SPAWN_MIN_DST, SPAWN_MAX_DST);
+                GenBox box = findRandomPointAboveSurface(pos, entityPos, SPAWN_MIN_DST, SPAWN_MAX_DST);
                 if (box != null) {
                     candidates.add(box);
                 }
@@ -240,29 +251,68 @@ public class DashCubes extends Module {
         }
         return result;
     }
-
+    
     private boolean canPlaceCube(BlockPos pos) {
         if (mc.world == null) return false;
-        if (!mc.world.isAir(pos)) return false;
-        if (mc.world.isAir(pos.down())) return false;
+
+        // Текущий блок должен быть проходимым
+        BlockState stateAt = mc.world.getBlockState(pos);
+        VoxelShape shapeAt = stateAt.getCollisionShape(mc.world, pos);
+        if (!shapeAt.isEmpty()) {
+            return false;
+        }
+
+        // Блок снизу должен иметь поверхность
+        BlockPos below = pos.down();
+        BlockState stateBelow = mc.world.getBlockState(below);
+        VoxelShape shapeBelow = stateBelow.getCollisionShape(mc.world, below);
+
+        if (shapeBelow.isEmpty()) {
+            return false;
+        }
 
         Box box = new Box(pos);
         return mc.world.getOtherEntities(null, box).isEmpty();
     }
 
-    private GenBox findRandomPointInBlock(BlockPos pos, Vec3d center, double minDst, double maxDst) {
+    private double getSurfaceY(BlockPos airPos) {
+        if (mc.world == null) return airPos.getY();
+
+        BlockPos below = airPos.down();
+        BlockState stateBelow = mc.world.getBlockState(below);
+        VoxelShape shapeBelow = stateBelow.getCollisionShape(mc.world, below);
+
+        if (shapeBelow.isEmpty()) {
+            return below.getY() + 1.0;
+        }
+
+        try {
+            Box bounds = shapeBelow.getBoundingBox();
+            return below.getY() + bounds.maxY;
+        } catch (Exception e) {
+            // На случай если shape пустая (не должно быть, но страхуемся)
+            return below.getY() + 1.0;
+        }
+    }
+
+    private GenBox findRandomPointAboveSurface(BlockPos pos, Vec3d center,
+                                               double minDst, double maxDst) {
         if (mc.world == null) return null;
+
+        double surfaceY = getSurfaceY(pos);
 
         int attempts = 64;
         while (attempts-- > 0) {
-            Vec3d vec = new Vec3d(
-                    pos.getX() + RANDOM.nextDouble(),
-                    pos.getY() + RANDOM.nextDouble(),
-                    pos.getZ() + RANDOM.nextDouble()
-            );
+            double rx = pos.getX() + RANDOM.nextDouble();
+            double rz = pos.getZ() + RANDOM.nextDouble();
+
+            double cubeHalf = (1.0 / RES_PX) / 2.0;
+            double ry = surfaceY + cubeHalf;
+
+            Vec3d vec = new Vec3d(rx, ry, rz);
             double dst = vec.distanceTo(center);
             if (dst >= minDst && dst <= maxDst) {
-                return new GenBox(vec, RES_PX);
+                return new GenBox(rx, ry, rz, RES_PX);
             }
         }
         return null;
@@ -277,6 +327,11 @@ public class DashCubes extends Module {
     }
 
     private int getCubeColor(float alphaPc) {
+        if (shaderColors.get()) {
+            int themeColor = ShaderThemeVisuals.animatedPrimary(shaderTheme.get(), System.currentTimeMillis() * 0.002 + alphaPc * 4.0);
+            return RenderUtil.ColorUtil.multAlpha(themeColor, MathHelper.clamp(alphaPc, 0.0f, 1.0f));
+        }
+
         int baseColor = switch (colorMode.get()) {
             case "RGB" -> RenderUtil.ColorUtil.rainbow(10, 0, 1f, 1f, 1f);
             case "Astolfo" -> RenderUtil.ColorUtil.skyRainbow(25, 0);
@@ -296,17 +351,16 @@ public class DashCubes extends Module {
         final Vec3d center;
         final double halfSize;
 
-        GenBox(Vec3d vec, int resPx) {
+        GenBox(double x, double y, double z, int resPx) {
             double resOff = 1.0 / resPx;
-            double x = Math.floor(vec.x * resPx) / resPx;
-            double z = Math.floor(vec.z * resPx) / resPx;
-            double blockTopY = Math.floor(vec.y);
+            double snappedX = Math.floor(x * resPx) / resPx;
+            double snappedZ = Math.floor(z * resPx) / resPx;
 
             this.halfSize = resOff / 2.0;
             this.center = new Vec3d(
-                    x + halfSize,
-                    blockTopY + halfSize - resOff,
-                    z + halfSize
+                    snappedX + halfSize,
+                    y,
+                    snappedZ + halfSize
             );
         }
     }
@@ -339,6 +393,7 @@ public class DashCubes extends Module {
 
         boolean isDead() {
             if (box == null || owner == null || owner.isRemoved()) return true;
+            if (owner.isInvisible()) return true;
 
             float timePc = getTimePc();
             if (timePc >= 1.0f) return true;
@@ -386,7 +441,7 @@ public class DashCubes extends Module {
 
             if (jumpTicks <= 0) {
                 this.jumpTicksMax = this.jumpTicks = (int) (14.0F * (0.5F + 0.5F * RANDOM.nextFloat()));
-                this.jumpHeight = (getRandomJumpPixels() * (1.0 / 16.0)); // px -> блоки
+                this.jumpHeight = (getRandomJumpPixels() * (1.0 / 16.0));
                 this.jumpYaw = getRandomYaw();
             }
         }
@@ -408,7 +463,6 @@ public class DashCubes extends Module {
             float timePc = getTimePc();
             if (timePc >= 1.0f) return;
 
-            // Плавный fade-in / fade-out
             float targetAlphaPc;
             if (timePc < 0.1f) {
                 targetAlphaPc = timePc / 0.1f;

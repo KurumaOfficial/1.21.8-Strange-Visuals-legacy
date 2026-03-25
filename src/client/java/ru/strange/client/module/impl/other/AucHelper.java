@@ -2,7 +2,6 @@ package ru.strange.client.module.impl.other;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
@@ -14,6 +13,7 @@ import ru.strange.client.module.api.Category;
 import ru.strange.client.module.api.IModule;
 import ru.strange.client.module.api.Module;
 import ru.strange.client.module.api.setting.impl.BindSettings;
+import ru.strange.client.utils.other.BindUtil;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -28,6 +28,7 @@ import java.util.Map;
         bind = -1
 )
 public class AucHelper extends Module {
+
     private final BindSettings bindSetting = new BindSettings("Бинд", -1);
 
     private static Map<String, String> ruTranslations;
@@ -41,7 +42,8 @@ public class AucHelper extends Module {
         if (!enable) return;
         if (mc.currentScreen instanceof ChatScreen) return;
         if (event.action() != GLFW.GLFW_PRESS) return;
-        if (event.key() == bindSetting.get()) {
+
+        if (BindUtil.matchesKeyboard(bindSetting.get(), event.key())) {
             sendSearchCommand();
         }
     }
@@ -51,15 +53,14 @@ public class AucHelper extends Module {
         if (!enable) return;
         if (mc.currentScreen instanceof ChatScreen) return;
         if (event.action() != GLFW.GLFW_PRESS) return;
-        if (event.button() == bindSetting.get()) {
+
+        if (BindUtil.matchesMouse(bindSetting.get(), event.button())) {
             sendSearchCommand();
         }
     }
 
     private void sendSearchCommand() {
-        if (mc.player == null) {
-            return;
-        }
+        if (mc.player == null) return;
 
         ItemStack stack = mc.player.getMainHandStack();
         String itemName = getRussianName(stack);
@@ -87,7 +88,7 @@ public class AucHelper extends Module {
         if (ruTranslations != null) return ruTranslations;
         ruTranslations = new HashMap<>();
         try {
-            var resource = MinecraftClient.getInstance()
+            var resource = net.minecraft.client.MinecraftClient.getInstance()
                     .getResourceManager()
                     .getResource(Identifier.of("minecraft", "lang/ru_ru.json"));
             if (resource.isEmpty()) {

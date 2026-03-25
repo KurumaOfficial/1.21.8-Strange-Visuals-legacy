@@ -19,9 +19,12 @@ import ru.strange.client.event.impl.EventRender3D;
 import ru.strange.client.module.api.Category;
 import ru.strange.client.module.api.IModule;
 import ru.strange.client.module.api.Module;
+import ru.strange.client.module.api.setting.impl.BooleanSetting;
 import ru.strange.client.module.api.setting.impl.HueSetting;
 import ru.strange.client.module.api.setting.impl.ModeSetting;
 import ru.strange.client.module.api.setting.impl.SliderSetting;
+import ru.strange.client.renderengine.renderers.util.ShaderThemePreset;
+import ru.strange.client.renderengine.renderers.util.ShaderThemeVisuals;
 import ru.strange.client.utils.math.animation.anim.util.Easings;
 import ru.strange.client.utils.math.MathHelper;
 import ru.strange.client.utils.math.Mathf;
@@ -33,7 +36,7 @@ import ru.strange.client.utils.math.animation.impl.EaseInOutQuad;
 import ru.strange.client.utils.render.Render3D;
 import ru.strange.client.utils.render.RenderUtil.ColorUtil;
 
-import java.awt.*;
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -50,22 +53,34 @@ public class TargetESP extends Module {
     public static ModeSetting typeGhost = new ModeSetting("Режим призраков","Обычный","Обычный","Новый","Старый").hidden(() -> !typeTargetEsp.is("Призраки"));
 
     public static ModeSetting typeCube = new ModeSetting("Режим кубиков","Новый","Новый","Старый").hidden(() -> !typeTargetEsp.is("Кубики"));
-    
+
     public static SliderSetting imageSize = new SliderSetting("Размер картинки", 1.5f, 0.5f, 3.0f, 0.1f, false).hidden(() -> !typeTargetEsp.is("Картинка"));
-    
+
     public static SliderSetting cubeSize = new SliderSetting("Размер кубиков", 0.19f, 0.1f, 0.5f, 0.01f, false).hidden(() -> !typeTargetEsp.is("Кубики") || !typeCube.is("Новый"));
-    
+
     public static SliderSetting cubeCount = new SliderSetting("Количество кубиков", 24, 12, 48, 1, false).hidden(() -> !typeTargetEsp.is("Кубики") || !typeCube.is("Новый"));
-    
+
     public static SliderSetting oldCubeSize = new SliderSetting("Размер кубиков", 0.12f, 0.05f, 0.3f, 0.01f, false).hidden(() -> !typeTargetEsp.is("Кубики") || !typeCube.is("Старый"));
-    
+
     public static SliderSetting oldCubeSpawnRate = new SliderSetting("Скорость спавна", 0.02f, 0.01f, 0.1f, 0.01f, false).hidden(() -> !typeTargetEsp.is("Кубики") || !typeCube.is("Старый"));
-    
+
     public static HueSetting colorSetting = new HueSetting("Цвет", new Color(131, 166, 232));
 
 
+    public static SliderSetting ghostCount = new SliderSetting("Ghost Count", 12, 6, 24, 1, false).hidden(() -> !typeTargetEsp.is("Призраки"));
+
+    public static SliderSetting ghostRadius = new SliderSetting("Ghost Radius", 1.0f, 0.5f, 2.5f, 0.05f, false).hidden(() -> !typeTargetEsp.is("Призраки"));
+
+    public static SliderSetting ghostSpeed = new SliderSetting("Ghost Speed", 1.0f, 0.4f, 2.4f, 0.05f, false).hidden(() -> !typeTargetEsp.is("Призраки"));
+
+    public static SliderSetting ghostTrajectory = new SliderSetting("Ghost Path", 1.0f, 0.35f, 2.2f, 0.05f, false).hidden(() -> !typeTargetEsp.is("Призраки"));
+
+    public static BooleanSetting shaderColors = new BooleanSetting("Shader Colors", false);
+    public static ModeSetting shaderTheme = new ModeSetting("Shader Theme", ShaderThemePreset.COSMOS.displayName(), ShaderThemePreset.names())
+            .hidden(() -> !shaderColors.get());
+
     public TargetESP() {
-        addSettings(typeTargetEsp,typeGhost,typeCube,imageSize,cubeSize,cubeCount,oldCubeSize,oldCubeSpawnRate,colorSetting);
+        addSettings(typeTargetEsp,typeGhost,typeCube,imageSize,cubeSize,cubeCount,oldCubeSize,oldCubeSpawnRate,ghostCount,ghostRadius,ghostSpeed,ghostTrajectory,colorSetting,shaderColors,shaderTheme);
     }
 
 
@@ -87,12 +102,11 @@ public class TargetESP extends Module {
     private static final int OLD_CUBE_PARTICLES_PER_SPAWN = 1;
     private static final int MAX_PARTICLES = 50; // Лимит частиц для производительности
     private float oldCubeSpawnAccumulator = 0f;
-    private static RenderLayer cachedGlowLayer = null;
 
     @EventInit
     public void onRender(EventRender3D e) {
         alpha.update();
-        
+
         LivingEntity target = null;
         if (mc.targetedEntity instanceof LivingEntity) {
             target = (LivingEntity) mc.targetedEntity;
@@ -151,6 +165,12 @@ public class TargetESP extends Module {
 
     private static final int QUAD_BUFFER_SIZE_BYTES = 1 << 10;
 
+    private int getThemeColor(double phase) {
+        return shaderColors.get()
+                ? ShaderThemeVisuals.animatedPrimary(shaderTheme.get(), phase)
+                : colorSetting.getRGB();
+    }
+
     private void renderDiamondNewStyle(MatrixStack matrices, VertexConsumerProvider.Immediate immediate, LivingEntity target, float partialTicks) {
         Vec3d lerpedPos = target.getLerpedPos(partialTicks);
         double x = lerpedPos.x;
@@ -179,21 +199,12 @@ public class TargetESP extends Module {
         float sizePC = (float) alpha.getValue();
 
         int redColor = ColorUtil.getColor(200, 70, 70, (int) (255.0F * sizePC));
-        int colorS = ColorUtil.overCol(ColorUtil.multAlpha(colorSetting.getRGB(), sizePC), redColor, size.get());
+        int colorS = ColorUtil.overCol(ColorUtil.multAlpha(getThemeColor(target.getId() * 0.41 + 0.3), sizePC), redColor, size.get());
 
         float size = imageSize.get() - 0.9F * sizePC + (0.35F - 0.35F * rzs);
         matrices.scale(size, size, 1.0f);
 
-        RenderLayer renderLayer = RenderLayer.of(
-                TARGET_TEXTURE_N.toString(),
-                QUAD_BUFFER_SIZE_BYTES,
-                false,
-                true,
-                TEXTURED_QUADS_NO_DEPTH_ADDITIVE_PIPELINE,
-                RenderLayer.MultiPhaseParameters.builder()
-                        .texture(new RenderPhase.Texture(TARGET_TEXTURE_N, false))
-                        .build(false)
-        );
+        RenderLayer renderLayer = TARGET_RENDER_LAYER;
 
         Matrix4f bloomMatrix = matrices.peek().getPositionMatrix();
         VertexConsumer bloomBuffer = immediate.getBuffer(renderLayer);
@@ -213,7 +224,7 @@ public class TargetESP extends Module {
 
         long timeDiff = currentTime - currentTimeSpirits;
         if (timeDiff > 0) {
-            animationNurik += (float) (5L * timeDiff) / 900.0F;
+            animationNurik += ghostSpeed.get() * (float) (5L * timeDiff) / 900.0F;
         }
         currentTimeSpirits = currentTime;
 
@@ -232,24 +243,17 @@ public class TargetESP extends Module {
         size.run((double) hurtPC, 0.4, (Easing) Easings.QUART_OUT);
         float atts = size.get();
 
-        int fadeColor = colorSetting.getRGB();
+        int fadeColor = getThemeColor(animationNurik * 0.11 + target.getId() * 0.37);
         int redColor = ColorUtil.getColor(200, 70, 70, (int) (255.0F * alphaPC));
         int baseColor = ColorUtil.overCol(ColorUtil.multAlpha(fadeColor, alphaPC), redColor, atts);
 
-        RenderLayer renderLayer = RenderLayer.of(
-                GLOW_TEXTURE.getNamespace(),
-                QUAD_BUFFER_SIZE_BYTES,
-                false,
-                true,
-                TEXTURED_QUADS_PIPELINE,
-                RenderLayer.MultiPhaseParameters.builder()
-                        .texture(new RenderPhase.Texture(GLOW_TEXTURE, false))
-                        .build(false)
-        );
+        RenderLayer renderLayer = GLOW_RENDER_LAYER;
 
         int n2 = 3;
-        int n3 = 12;
+        int n3 = Math.max(6, (int) ghostCount.get());
         int n4 = 3 * n2;
+        float radiusScale = ghostRadius.get();
+        float trajectoryScale = ghostTrajectory.get();
 
         matrices.push();
 
@@ -258,16 +262,16 @@ public class TargetESP extends Module {
         for (int i = 0; i < n4; i += n2) {
             for (int j = 0; j < n3; j++) {
                 float f2 = animationNurik + (float) j * 0.1F;
-                float f3 = 0.75F;
-                float f4 = 0.5F;
+                float f3 = 0.75F * radiusScale;
+                float f4 = 0.5F * trajectoryScale;
                 int n5 = (int) Math.pow((double) i, 2.0F);
 
                 matrices.push();
 
                 // 3D спиральное движение с глубиной
-                double spiralRadius = f3 * (1.0 + Math.sin(animationNurik * 0.5 + j * 0.3) * 0.2);
+                double spiralRadius = f3 * (1.0 + Math.sin(animationNurik * 0.5 + j * 0.3) * 0.2 * trajectoryScale);
                 double particleX = x + (spiralRadius * Math.sin(f2 + (float) n5));
-                double particleY = y + (double) f4 + (double) (0.3F * Math.sin(animationNurik + (float) j * 0.2F)) + (double) (0.2F * (float) i);
+                double particleY = y + (double) f4 + (double) ((0.3F * trajectoryScale) * Math.sin(animationNurik + (float) j * 0.2F)) + (double) (0.2F * (float) i);
                 double particleZ = z + (spiralRadius * Math.cos(f2 - (float) n5));
 
                 matrices.translate(particleX, particleY, particleZ);
@@ -341,7 +345,7 @@ public class TargetESP extends Module {
 
         long timeDiff = currentTime - currentTimeSpirits;
         if (timeDiff > 0) {
-            animationNurik += (float) (5L * timeDiff) / 200.0F;
+            animationNurik += ghostSpeed.get() * (float) (5L * timeDiff) / 200.0F;
         }
         currentTimeSpirits = currentTime;
 
@@ -354,25 +358,16 @@ public class TargetESP extends Module {
 
         float alphaPC = (float) alpha.getValue();
 
-        RenderLayer renderLayer = RenderLayer.of(
-                GLOW_TEXTURE.getNamespace(),
-                QUAD_BUFFER_SIZE_BYTES,
-                false,
-                true,
-                TEXTURED_QUADS_PIPELINE,
-                RenderLayer.MultiPhaseParameters.builder()
-                        .texture(new RenderPhase.Texture(GLOW_TEXTURE, false))
-                        .build(false)
-        );
+        RenderLayer renderLayer = GLOW_RENDER_LAYER;
 
         int espLength = 17 ;
         int factor = 6;
-        float shaking = 1.25F;
-        float amplitude = 1.1F;
+        float shaking = Math.max(0.45F, 1.25F / ghostTrajectory.get());
+        float amplitude = 1.1F * ghostTrajectory.get();
         float iAge = animationNurik;
 
         Camera camera = mc.gameRenderer.getCamera();
-        double targetWidth = target.getWidth() + 0.12F;
+        double targetWidth = (target.getWidth() + 0.12F) * ghostRadius.get();
         boolean canSee = mc.player.canSee(target);
 
         VertexConsumer buffer = immediate.getBuffer(renderLayer);
@@ -382,7 +377,7 @@ public class TargetESP extends Module {
         size.run((double) hurtPC, (double) 0.4, (Easing) Easings.QUART_OUT);
         float atts = size.get();
 
-        int fadeColor = colorSetting.getRGB();
+        int fadeColor = getThemeColor(animationNurik * 0.17 + target.getId() * 0.61);
         int redColor = ColorUtil.getColor(200, 70, 70, (int) (255.0F * alphaPC));
         int baseColor = ColorUtil.overCol(ColorUtil.multAlpha(fadeColor, alphaPC), redColor, atts);
         for (int j = 0; j < 3; j++) {
@@ -472,18 +467,6 @@ public class TargetESP extends Module {
                     .build()
     );
 
-
-    private static final RenderPipeline TEXTURED_QUADS_NO_DEPTH_ADDITIVE_PIPELINE = RenderPipelines.register(
-            RenderPipeline.builder(RenderPipelines.POSITION_TEX_COLOR_SNIPPET)
-                    .withLocation(Identifier.of(PIPELINE_NAMESPACE, "pipeline/world/textured_quads"))
-                    .withVertexFormat(VertexFormats.POSITION_TEXTURE_COLOR, VertexFormat.DrawMode.QUADS)
-                    .withCull(false)
-                    .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-                    .withDepthWrite(false)
-                    .withBlend(BlendFunction.LIGHTNING)
-                    .build()
-    );
-
     private static final RenderPipeline COLOR_QUADS_PIPELINE = RenderPipelines.register(
             RenderPipeline.builder(RenderPipelines.POSITION_COLOR_SNIPPET)
                     .withLocation(Identifier.of(PIPELINE_NAMESPACE, "pipeline/world/color_quads"))
@@ -524,13 +507,46 @@ public class TargetESP extends Module {
             RenderLayer.MultiPhaseParameters.builder().build(false)
     );
 
+    private static final RenderLayer TARGET_RENDER_LAYER = RenderLayer.of(
+            TARGET_TEXTURE_N.toString(),
+            QUAD_BUFFER_SIZE_BYTES,
+            false,
+            true,
+            TEXTURED_QUADS_PIPELINE,
+            RenderLayer.MultiPhaseParameters.builder()
+                    .texture(new RenderPhase.Texture(TARGET_TEXTURE_N, false))
+                    .build(false)
+    );
+
+    private static final RenderLayer GLOW_RENDER_LAYER = RenderLayer.of(
+            GLOW_TEXTURE.getNamespace(),
+            QUAD_BUFFER_SIZE_BYTES,
+            false,
+            true,
+            TEXTURED_QUADS_PIPELINE,
+            RenderLayer.MultiPhaseParameters.builder()
+                    .texture(new RenderPhase.Texture(GLOW_TEXTURE, false))
+                    .build(false)
+    );
+
+    private static final RenderLayer GLOW_C_RENDER_LAYER = RenderLayer.of(
+            GLOW_TEXTURE_C.getNamespace(),
+            QUAD_BUFFER_SIZE_BYTES,
+            false,
+            true,
+            TEXTURED_QUADS_PIPELINE,
+            RenderLayer.MultiPhaseParameters.builder()
+                    .texture(new RenderPhase.Texture(GLOW_TEXTURE_C, false))
+                    .build(false)
+    );
+
 
     private void renderGhosts(MatrixStack matrices, VertexConsumerProvider.Immediate immediate, LivingEntity target, float partialTicks) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (target == null) {
             return;
         }
-        double radius = 0.3 + target.getWidth() / 2;
+        double radius = (0.3 + target.getWidth() / 2) * ghostRadius.get();
 
         size.update();
         int hurtTicks = target.hurtTime;
@@ -541,10 +557,10 @@ public class TargetESP extends Module {
 
         float atts = size.get();
 
-        float speed = 30;
+        float speed = 30 / Math.max(0.2f, ghostSpeed.get());
         float size = 0.4F - 0.1F * atts;
-        double distance = 6 - (int) (1 * atts);
-        int length = 40  - (int) (12 * atts);
+        double distance = (6 - (int) (1 * atts)) * ghostTrajectory.get();
+        int length = Math.max(16, (int) (ghostCount.get() * 3) - (int) (8 * atts));
 
         Vec3d cameraPos = mc.gameRenderer.getCamera().getPos();
         Camera camera = mc.gameRenderer.getCamera();
@@ -562,16 +578,7 @@ public class TargetESP extends Module {
         double posY = interpolated.y;
         double posZ = interpolated.z;
 
-        RenderLayer renderLayer = RenderLayer.of(
-                GLOW_TEXTURE.getNamespace(),
-                QUAD_BUFFER_SIZE_BYTES,
-                false,
-                true,
-                TEXTURED_QUADS_PIPELINE,
-                RenderLayer.MultiPhaseParameters.builder()
-                        .texture(new RenderPhase.Texture(GLOW_TEXTURE, false))
-                        .build(false)
-        );
+        RenderLayer renderLayer = GLOW_RENDER_LAYER;
         VertexConsumer buffer = immediate.getBuffer(renderLayer);
 
         float sizePC = (float) alpha.getValue();
@@ -579,7 +586,7 @@ public class TargetESP extends Module {
 
 
 
-        int fadeColor = colorSetting.getRGB();
+        int fadeColor = getThemeColor(currentTime * 0.001 + target.getId() * 0.23);
         int baseColor = ColorUtil.overCol(ColorUtil.multAlpha(fadeColor, sizePC), redColor, atts);
 
         int color1 = baseColor;
@@ -591,7 +598,7 @@ public class TargetESP extends Module {
 
         matrices.translate(posX - cameraPos.x, posY - cameraPos.y, posZ - cameraPos.z);
 
-        float sfz = 0.3F ;
+        float sfz = 0.3F * ghostTrajectory.get();
 
         for (int i = 0; i < length; i++) {
             double angle = 0.05f * (currentTime - lastTime - (i * distance)) / speed;
@@ -715,7 +722,7 @@ public class TargetESP extends Module {
         float atts = size.get();
 
         int redColor = ColorUtil.getColor(200, 70, 70, (int) (60 * alphaPC));
-        int fadeColor = colorSetting.getRGB();
+        int fadeColor = getThemeColor(time * 0.0017 + target.getId() * 0.47);
         int baseColor = ColorUtil.multAlpha(fadeColor, alphaPC * 0.35f);
 
 
@@ -795,16 +802,7 @@ public class TargetESP extends Module {
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-mc.gameRenderer.getCamera().getYaw()));
             matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(mc.gameRenderer.getCamera().getPitch()));
 
-            RenderLayer glowLayer = RenderLayer.of(
-                    GLOW_TEXTURE_C.getNamespace(),
-                    QUAD_BUFFER_SIZE_BYTES,
-                    false,
-                    true,
-                    TEXTURED_QUADS_PIPELINE,
-                    RenderLayer.MultiPhaseParameters.builder()
-                            .texture(new RenderPhase.Texture(GLOW_TEXTURE_C, false))
-                            .build(false)
-            );
+            RenderLayer glowLayer = GLOW_C_RENDER_LAYER;
             VertexConsumer glowBuffer = immediate.getBuffer(glowLayer);
             Matrix4f glowMatrix = matrices.peek().getPositionMatrix();
 
@@ -866,7 +864,7 @@ public class TargetESP extends Module {
             float atts = size.get();
 
             int redColor = ColorUtil.getColor(200, 70, 70, (int) (60 * alphaPC));
-            int fadeColor = colorSetting.getRGB();
+            int fadeColor = getThemeColor(currentTime * 0.0021 + target.getId() * 0.73);
             int baseColor = ColorUtil.multAlpha(fadeColor, alphaPC * 0.35f);
             int color = ColorUtil.overCol(baseColor, redColor, atts);
             int glowCol = ColorUtil.overCol(ColorUtil.multAlpha(fadeColor, alphaPC),
@@ -877,22 +875,9 @@ public class TargetESP extends Module {
             float pitch = mc.gameRenderer.getCamera().getPitch();
             float yaw = mc.gameRenderer.getCamera().getYaw();
 
-            if (cachedGlowLayer == null) {
-                cachedGlowLayer = RenderLayer.of(
-                        GLOW_TEXTURE_C.getNamespace(),
-                        QUAD_BUFFER_SIZE_BYTES,
-                        false,
-                        true,
-                        TEXTURED_QUADS_PIPELINE,
-                        RenderLayer.MultiPhaseParameters.builder()
-                                .texture(new RenderPhase.Texture(GLOW_TEXTURE_C, false))
-                                .build(false)
-                );
-            }
-
             for (OldCubeParticle particle : oldCubeParticles) {
                 particle.update(partialTicks);
-                particle.render(matrices, immediate, color, glowCol, alphaPC, atts, partialTicks, cameraPos, pitch, yaw, cachedGlowLayer);
+                particle.render(matrices, immediate, color, glowCol, alphaPC, atts, partialTicks, cameraPos, pitch, yaw, GLOW_C_RENDER_LAYER);
             }
         }
     }

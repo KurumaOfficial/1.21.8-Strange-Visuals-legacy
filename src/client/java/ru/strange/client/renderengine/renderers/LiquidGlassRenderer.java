@@ -14,6 +14,7 @@ import net.minecraft.client.texture.TextureSetup;
 import org.joml.Matrix3x2fStack;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
+import ru.strange.client.Strange;
 import ru.strange.client.renderengine.builders.states.QuadColorState;
 import ru.strange.client.renderengine.builders.states.QuadRadiusState;
 import ru.strange.client.renderengine.builders.states.SizeState;
@@ -54,7 +55,7 @@ public record LiquidGlassRenderer(
     @Override
     public void render(double x, double y, DrawContext ctx) {
         if (PipelineRegistry.LIQUID_GLASS_PIPELINE == null) {
-            System.err.println("[LiquidGlass] Pipeline is null!");
+            Strange.LOGGER.warn("LiquidGlass pipeline is not initialized");
             return;
         }
 
@@ -65,14 +66,14 @@ public record LiquidGlassRenderer(
         LEGACY_BLUR.prepareScreenBlur(screenW, screenH, blurRadius);
         int blurredTexture = LEGACY_BLUR.getPreparedBlurTex();
         if (blurredTexture == 0) {
-            System.err.println("[LiquidGlass] Blurred texture is 0!");
+            Strange.LOGGER.warn("LiquidGlass blur preparation returned an invalid texture id");
             return;
         }
 
         int blurW = LEGACY_BLUR.getPreparedBlurW();
         int blurH = LEGACY_BLUR.getPreparedBlurH();
         if (blurW <= 0 || blurH <= 0) {
-            System.err.println("[LiquidGlass] Blur dimensions invalid: " + blurW + "x" + blurH);
+            Strange.LOGGER.warn("LiquidGlass blur dimensions are invalid: {}x{}", blurW, blurH);
             return;
         }
 
@@ -81,14 +82,14 @@ public record LiquidGlassRenderer(
         }
         var blurView = BLUR_TARGET.getColorAttachmentView();
         if (blurView == null) {
-            System.err.println("[LiquidGlass] Blur view is null!");
+            Strange.LOGGER.warn("LiquidGlass blur target view is null");
             return;
         }
         int blurTargetTexId = 0;
         GpuTexture blurTexture = blurView.texture();
         if (blurTexture instanceof GlTexture glBlurTexture) blurTargetTexId = glBlurTexture.getGlId();
         if (blurTargetTexId == 0) {
-            System.err.println("[LiquidGlass] Blur target texture ID is 0!");
+            Strange.LOGGER.warn("LiquidGlass blur target texture id is invalid");
             return;
         }
 

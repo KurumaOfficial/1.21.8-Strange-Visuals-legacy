@@ -15,6 +15,10 @@ public class GuiMouseClickedCategory extends GuiScreen {
                 } else {
                     selectedCategories = category;
                     GuiScreen.modules = Strange.get.manager.getType(GuiScreen.selectedCategories);
+                    GuiScreen.scroll.reset();
+                    if (Strange.get != null && Strange.get.configManager != null) {
+                        Strange.get.configManager.autoSave();
+                    }
 
                     return true;
                 }

@@ -6,7 +6,6 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -16,7 +15,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.Arm;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RotationAxis;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -24,6 +22,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.strange.client.event.EventManager;
+import ru.strange.client.event.impl.EventGlassHandsRender;
 import ru.strange.client.event.impl.EventHandAnimation;
 import ru.strange.client.event.impl.EventRenderItem;
 
@@ -84,38 +83,17 @@ public abstract class HeldItemRendererMixin {
                 renderOffHand = false;
             }
         }
-
-
         if (renderMainHand) {
             float swing = hand == Hand.MAIN_HAND ? f : 0.0f;
             float equip = 1.0f - MathHelper.lerp(tickProgress, this.lastEquipProgressMainHand, this.equipProgressMainHand);
-
-            matrices.push();
-
-            EventRenderItem renderItemEvent = new EventRenderItem(matrices, Hand.MAIN_HAND);
-            EventManager.call(renderItemEvent);
-
-
-            this.renderFirstPersonItem(player, tickProgress, pitch, Hand.MAIN_HAND, swing, this.mainHand, equip, matrices, vertexConsumers, light);
-
-            matrices.pop();
+            strange$renderHand(player, tickProgress, pitch, Hand.MAIN_HAND, swing, this.mainHand, equip, matrices, vertexConsumers, light);
         }
+
         if (renderOffHand) {
             float swing = hand == Hand.OFF_HAND ? f : 0.0f;
             float equip = 1.0f - MathHelper.lerp(tickProgress, this.lastEquipProgressOffHand, this.equipProgressOffHand);
-
-            matrices.push();
-
-            EventRenderItem renderItemEvent = new EventRenderItem(matrices, Hand.OFF_HAND);
-            EventManager.call(renderItemEvent);
-
-
-            this.renderFirstPersonItem(player, tickProgress, pitch, Hand.OFF_HAND, swing, this.offHand, equip, matrices, vertexConsumers, light);
-
-            matrices.pop();
+            strange$renderHand(player, tickProgress, pitch, Hand.OFF_HAND, swing, this.offHand, equip, matrices, vertexConsumers, light);
         }
-
-        vertexConsumers.draw();
     }
 
     @WrapOperation(method = "renderFirstPersonItem", at = @At(value = "INVOKE",
@@ -129,5 +107,21 @@ public abstract class HeldItemRendererMixin {
     @Unique
     private boolean strange$isChargedCrossbow(ItemStack stack) {
         return stack.isOf(net.minecraft.item.Items.CROSSBOW) && net.minecraft.item.CrossbowItem.isCharged(stack);
+    }
+
+    @Unique
+    private void strange$renderHand(ClientPlayerEntity player, float tickProgress, float pitch, Hand hand, float swing,
+                                    ItemStack item, float equip, MatrixStack matrices,
+                                    VertexConsumerProvider.Immediate vertexConsumers, int light) {
+        EventManager.call(new EventGlassHandsRender(EventGlassHandsRender.Phase.PRE, matrices, tickProgress, hand, item));
+
+        matrices.push();
+        EventRenderItem renderItemEvent = new EventRenderItem(matrices, hand, item);
+        EventManager.call(renderItemEvent);
+        this.renderFirstPersonItem(player, tickProgress, pitch, hand, swing, item, equip, matrices, vertexConsumers, light);
+        matrices.pop();
+
+        vertexConsumers.draw();
+        EventManager.call(new EventGlassHandsRender(EventGlassHandsRender.Phase.POST, matrices, tickProgress, hand, item));
     }
 }

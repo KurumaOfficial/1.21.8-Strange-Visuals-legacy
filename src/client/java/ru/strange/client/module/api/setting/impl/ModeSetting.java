@@ -17,8 +17,7 @@ public class ModeSetting extends Setting {
     public ModeSetting(String name, String currentMode, String... options) {
         this.name = name;
         this.modes = Arrays.asList(options);
-        this.index = modes.indexOf(currentMode);
-        this.currentMode = modes.get(index);
+        setMode(currentMode);
     }
 
     public String get() {
@@ -26,6 +25,21 @@ public class ModeSetting extends Setting {
     }
     public boolean is(String mode) {
         return currentMode.equalsIgnoreCase(mode);
+    }
+
+    public void setMode(String mode) {
+        int resolvedIndex = 0;
+        if (mode != null) {
+            for (int i = 0; i < modes.size(); i++) {
+                if (modes.get(i).equalsIgnoreCase(mode)) {
+                    resolvedIndex = i;
+                    break;
+                }
+            }
+        }
+
+        this.index = resolvedIndex;
+        this.currentMode = modes.get(resolvedIndex);
     }
 
     public ModeSetting hidden(Supplier<Boolean> hidden) {

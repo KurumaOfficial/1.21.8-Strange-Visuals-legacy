@@ -311,12 +311,14 @@ public class GlyphBuffer {
 	public FollowUp addString(Font font, String s, float x, float y) {
 //		Profiler prof = Profilers.get();
 		long buffer = (hb_buffer_create());
+		hb_buffer_set_cluster_level(buffer, HB_BUFFER_CLUSTER_LEVEL_CHARACTERS);
 //		prof.push("prepare text");
 		try (MemoryStack memoryStack = MemoryStack.stackPush()) {
 			IntBuffer intBuffer = memoryStack.ints(s.codePoints().toArray());
 			hb_buffer_add_codepoints(buffer, intBuffer, 0, -1);
 		}
 //		prof.swap("shape text");
+		hb_buffer_set_content_type(buffer, HB_BUFFER_CONTENT_TYPE_UNICODE);
 		hb_buffer_guess_segment_properties(buffer);
 		hb_shape(font.hbFont, buffer, null);
 //		prof.swap("add shaped");

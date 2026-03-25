@@ -7,9 +7,12 @@ import net.minecraft.util.math.MathHelper;
 
 import java.lang.reflect.Method;
 
+public class ScaledResolution {
+    private static final int FALLBACK_WIDTH = 1920;
+    private static final int FALLBACK_HEIGHT = 1080;
+    private static int lastKnownWidth = FALLBACK_WIDTH;
+    private static int lastKnownHeight = FALLBACK_HEIGHT;
 
-public class ScaledResolution
-{
     private final double scaledWidthD;
     private final double scaledHeightD;
     private int scaledWidth;
@@ -17,49 +20,64 @@ public class ScaledResolution
     private static int scaleFactor;
 
     public ScaledResolution(MinecraftClient mc) {
-        // Проверяем что окно инициализировано
         if (mc == null || mc.getWindow() == null) {
-            // Fallback значения если окно еще не создано
-            this.scaledWidth = 1920;
-            this.scaledHeight = 1080;
+            this.scaledWidth = lastKnownWidth;
+            this.scaledHeight = lastKnownHeight;
             scaleFactor = 1;
             this.scaledWidthD = this.scaledWidth;
             this.scaledHeightD = this.scaledHeight;
             return;
         }
-        
-        this.scaledWidth = mc.getWindow().getWidth();
-        this.scaledHeight = mc.getWindow().getHeight();
+
+        int windowWidth = mc.getWindow().getWidth();
+        int windowHeight = mc.getWindow().getHeight();
+        if (mc.getWindow().isMinimized()
+                || mc.getWindow().hasZeroWidthOrHeight()
+                || windowWidth <= 0
+                || windowHeight <= 0) {
+            windowWidth = lastKnownWidth;
+            windowHeight = lastKnownHeight;
+        } else {
+            lastKnownWidth = windowWidth;
+            lastKnownHeight = windowHeight;
+        }
+
+        this.scaledWidth = Math.max(1, windowWidth);
+        this.scaledHeight = Math.max(1, windowHeight);
         scaleFactor = 1;
-        
+
         boolean forceUnicodeFont = false;
         try {
             GameOptions options = mc.options;
-            // Пробуем использовать публичный метод getForceUnicodeFont()
             try {
                 Method getMethod = GameOptions.class.getMethod("getForceUnicodeFont");
                 @SuppressWarnings("unchecked")
                 SimpleOption<Boolean> flag = (SimpleOption<Boolean>) getMethod.invoke(options);
                 forceUnicodeFont = flag != null && flag.getValue();
             } catch (NoSuchMethodException e) {
-                // Если публичного метода нет, используем рефлексию для приватного метода
                 Method forceUnicodeFontMethod = GameOptions.class.getDeclaredMethod("forceUnicodeFont");
                 forceUnicodeFontMethod.setAccessible(true);
                 @SuppressWarnings("unchecked")
                 SimpleOption<Boolean> flag = (SimpleOption<Boolean>) forceUnicodeFontMethod.invoke(options);
                 forceUnicodeFont = flag != null && flag.getValue();
             }
-        } catch (Exception e) {
-            // Если не удалось получить доступ к forceUnicodeFont, просто игнорируем
+        } catch (Exception ignored) {
+            // Use the default scaling path when the option is unavailable.
         }
-        
-        int i = 2;
 
-        while (scaleFactor < i && this.scaledWidth / (scaleFactor + 1) >= 320 && this.scaledHeight / (scaleFactor + 1) >= 240) ++scaleFactor;
-        if (forceUnicodeFont && scaleFactor % 2 != 0 && scaleFactor != 1) --scaleFactor;
+        int maxScaleFactor = 2;
+        while (scaleFactor < maxScaleFactor
+                && this.scaledWidth / (scaleFactor + 1) >= 320
+                && this.scaledHeight / (scaleFactor + 1) >= 240) {
+            ++scaleFactor;
+        }
 
-        this.scaledWidthD = (double)this.scaledWidth / scaleFactor;
-        this.scaledHeightD = (double)this.scaledHeight / scaleFactor;
+        if (forceUnicodeFont && scaleFactor % 2 != 0 && scaleFactor != 1) {
+            --scaleFactor;
+        }
+
+        this.scaledWidthD = (double) this.scaledWidth / scaleFactor;
+        this.scaledHeightD = (double) this.scaledHeight / scaleFactor;
         this.scaledWidth = MathHelper.ceil(this.scaledWidthD);
         this.scaledHeight = MathHelper.ceil(this.scaledHeightD);
     }

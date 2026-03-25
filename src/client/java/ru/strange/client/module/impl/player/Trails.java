@@ -30,6 +30,8 @@ import ru.strange.client.module.api.setting.impl.BooleanSetting;
 import ru.strange.client.module.api.setting.impl.HueSetting;
 import ru.strange.client.module.api.setting.impl.ModeSetting;
 import ru.strange.client.module.api.setting.impl.SliderSetting;
+import ru.strange.client.renderengine.renderers.util.ShaderThemePreset;
+import ru.strange.client.renderengine.renderers.util.ShaderThemeVisuals;
 import ru.strange.client.utils.animation.util.Animation;
 import ru.strange.client.utils.math.MathHelper;
 import ru.strange.client.utils.render.RenderUtil;
@@ -60,8 +62,12 @@ public class Trails extends Module {
     public static BooleanSetting lighting = new BooleanSetting("Свечение", true);
     public static BooleanSetting drawInFirstPerson = new BooleanSetting("От первого лица", true);
 
+    public static BooleanSetting shaderColors = new BooleanSetting("Shader Colors", false);
+    public static ModeSetting shaderTheme = new ModeSetting("Shader Theme", ShaderThemePreset.COSMOS.displayName(), ShaderThemePreset.names())
+            .hidden(() -> !shaderColors.get());
+
     public Trails() {
-        addSettings(colorSetting, colorMode, dashLength, dashSize, moveLerp, lighting, drawInFirstPerson);
+        addSettings(colorSetting, colorMode, shaderColors, shaderTheme, dashLength, dashSize, moveLerp, lighting, drawInFirstPerson);
     }
 
     private static final int QUAD_BUFFER_SIZE_BYTES = 1 << 10;
@@ -189,6 +195,9 @@ public class Trails extends Module {
     }
 
     private int getColorDashCubic() {
+        if (shaderColors.get()) {
+            return ShaderThemeVisuals.animatedPrimary(shaderTheme.get(), System.currentTimeMillis() * 0.002);
+        }
         return switch (colorMode.get()) {
             case "Random" -> Color.getHSBColor((float) RANDOM.nextInt(255) / 255.0f, 1.0f, 1.0f).getRGB();
             case "Astolfo" -> Color.getHSBColor((float) (System.currentTimeMillis() % 1000L) / 1000.0F, 0.8F, 1.0F).getRGB();

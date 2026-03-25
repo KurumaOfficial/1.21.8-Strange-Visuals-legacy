@@ -9,7 +9,9 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import ru.strange.client.localization.ModLocalization;
 import ru.strange.client.utils.other.SkinUtil;
+import ru.strange.client.utils.render.PauseMenuPreviewLayout;
 
 @Mixin(GameMenuScreen.class)
 public abstract class GameMenuScreenButtonsMixin extends Screen {
@@ -20,32 +22,28 @@ public abstract class GameMenuScreenButtonsMixin extends Screen {
 
     @Inject(method = "init", at = @At("TAIL"))
     private void strange$addButtons(CallbackInfo ci) {
-
-        int skinX2 = this.width - 25;
-        int skinX1 = skinX2 - 450;
-        int skinY1 = 35;
-        int skinY2 = skinY1 + 320;
+        PauseMenuPreviewLayout.Bounds bounds = PauseMenuPreviewLayout.getPreviewBounds(this);
 
         int buttonWidth = 100;
         int buttonHeight = 20;
         int spacing = 8;
 
-        int centerX = (skinX1 + skinX2) / 2;
-        int y = skinY2 - 100;
+        int centerX = (bounds.x1() + bounds.x2()) / 2;
+        int y = Math.max(bounds.y1() + 8, bounds.y2() - 28);
 
         int leftX  = centerX - buttonWidth - (spacing / 2);
         int rightX = centerX + (spacing / 2);
 
         this.addDrawableChild(
                 ButtonWidget.builder(
-                        Text.literal("Поставить скин"),
+                        Text.literal(ModLocalization.tr("pause.apply_skin")),
                         btn -> strange$onApplySkinClicked()
                 ).dimensions(leftX, y, buttonWidth, buttonHeight).build()
         );
 
         this.addDrawableChild(
                 ButtonWidget.builder(
-                        Text.literal("Сбросить скин"),
+                        Text.literal(ModLocalization.tr("pause.reset_skin")),
                         btn -> strange$onResetSkinClicked()
                 ).dimensions(rightX, y, buttonWidth, buttonHeight).build()
         );

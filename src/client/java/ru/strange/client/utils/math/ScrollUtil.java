@@ -91,7 +91,14 @@ public class ScrollUtil {
     }
 
     public void setMax(float max, float height) {
-        this.max = -max + height;
+        float newMax = Math.min(0.0f, -max + height);
+        this.max = newMax;
+        this.target = Math.min(Math.max(target, newMax), 0.0f);
+        this.scroll = Math.min(Math.max(scroll, newMax), 0.0f);
+
+        if (newMax == 0.0f) {
+            reset();
+        }
     }
 
     public float getTarget() {

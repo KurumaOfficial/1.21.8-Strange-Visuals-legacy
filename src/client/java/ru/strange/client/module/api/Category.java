@@ -1,5 +1,7 @@
 package ru.strange.client.module.api;
 
+import ru.strange.client.ui.clickgui.localization.GuiLocalization;
+
 public enum Category {
     Player("На игроке"),
     World("В мире"),
@@ -15,6 +17,6 @@ public enum Category {
     }
 
     public String getName() {
-        return name;
+        return GuiLocalization.categoryName(this, name);
     }
 }

@@ -13,11 +13,10 @@ public class LightmapTextureManagerMixin {
     private float night$getGammaValue(Double instance) {
         if (Strange.get != null && Strange.get.manager != null) {
             FullBright module = Strange.get.manager.get(FullBright.class);
-            if (module != null && module.enable) {
+            if (module != null && module.usesGammaBoost()) {
                 return 200F;
             }
         }
         return instance.floatValue();
     }
 }
-

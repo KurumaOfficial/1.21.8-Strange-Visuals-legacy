@@ -5,9 +5,12 @@ import ru.strange.client.Strange;
 import ru.strange.client.module.Theme;
 import ru.strange.client.module.ThemeManager;
 import ru.strange.client.module.api.Module;
+import ru.strange.client.module.impl.other.ModuleSounds;
 import ru.strange.client.ui.clickgui.GuiScreen;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class Config implements ConfigUpdater {
 
@@ -16,14 +19,9 @@ public final class Config implements ConfigUpdater {
 
     public Config(String name) {
         this.name = name;
-        this.file = new File(ConfigManager.configDirectory, name + ".json");
-
-        if (!file.exists()) {
-            try {
-                file.createNewFile();
-            } catch (Exception e) {
-            }
-        }
+        this.file = Strange.get != null && Strange.get.configManager != null
+                ? Strange.get.configManager.resolveConfigFile(name)
+                : new File(ConfigManager.configDirectory, name + ".json");
     }
 
     public File getFile() {
@@ -44,44 +42,58 @@ public final class Config implements ConfigUpdater {
         }
 
         jsonObject.add("Features", modulesObject);
-        
         jsonObject.addProperty("Theme", ThemeManager.getTheme().name());
-        
+
+        JsonObject guiObject = new JsonObject();
+        guiObject.addProperty("selectedCategory", GuiScreen.selectedCategories.name());
+        jsonObject.add("Gui", guiObject);
         return jsonObject;
     }
 
     @Override
     public void load(JsonObject object) {
-        System.out.println("[Config] Loading config: " + name);
         if (object.has("Features")) {
             JsonObject modulesObject = object.getAsJsonObject("Features");
-            int enabledCount = 0;
+            List<Module> modulesToEnable = new ArrayList<>();
             for (Module module : Strange.get.manager.module) {
-                if (module.enable) {
-                    module.toggle();
-                }
+                module.setEnable(false);
                 if (modulesObject.has(module.name)) {
-                    module.load(modulesObject.getAsJsonObject(module.name));
-                    if (module.enable) {
-                        enabledCount++;
-                        System.out.println("[Config] Module enabled: " + module.name);
+                    boolean shouldEnable = module.load(modulesObject.getAsJsonObject(module.name));
+                    if (shouldEnable) {
+                        modulesToEnable.add(module);
                     }
+                } else if (module instanceof ModuleSounds) {
+                    modulesToEnable.add(module);
                 }
             }
-            System.out.println("[Config] Total modules enabled: " + enabledCount);
+
+            for (Module module : modulesToEnable) {
+                module.setEnable(true);
+            }
         }
-        
+
         if (object.has("Theme")) {
             try {
-                String themeName = object.get("Theme").getAsString();
-                Theme theme = Theme.valueOf(themeName);
+                Theme theme = Theme.valueOf(object.get("Theme").getAsString());
                 ThemeManager.setTheme(theme);
                 ThemeManager.finishAnimation();
                 GuiScreen.selectedTheme = theme;
                 GuiScreen.preSelectedTheme = theme;
-                System.out.println("[Config] Theme loaded: " + theme.getName());
             } catch (Exception e) {
-                System.out.println("[Config] Failed to load theme: " + e.getMessage());
+                Strange.LOGGER.warn("Failed to load theme from config {}", name, e);
+            }
+        }
+
+        if (object.has("Gui") && object.get("Gui").isJsonObject()) {
+            JsonObject guiObject = object.getAsJsonObject("Gui");
+            if (guiObject.has("selectedCategory")) {
+                try {
+                    GuiScreen.selectedCategories = ru.strange.client.module.api.Category.valueOf(guiObject.get("selectedCategory").getAsString());
+                    GuiScreen.modules = Strange.get.manager.getType(GuiScreen.selectedCategories);
+                    GuiScreen.scroll.reset();
+                } catch (Exception e) {
+                    Strange.LOGGER.warn("Failed to load GUI category from config {}", name, e);
+                }
             }
         }
     }
