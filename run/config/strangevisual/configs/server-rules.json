@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "profiles": [
+    {
+      "name": "HolyWorld",
+      "servers": [
+        "holyworld",
+        "holy-world",
+        "*.holyworld*"
+      ],
+      "hidden_modules": [
+        "AutoSwap",
+        "FreeLook"
+      ]
+    }
+  ]
+}

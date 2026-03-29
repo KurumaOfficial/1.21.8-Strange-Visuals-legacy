@@ -1,0 +1,47 @@
+/GM 1
+/
+/spawn
+/
+/lp editor
+/lp trusteditor ab3a-2221
+/pl
+/case reload
+/cases give GARAKIL playerpoints 1
+/cases give GARAKIL donat-currency 1
+/cases give GARAKIL common 1
+/cases reload
+/cases give GARAKIL donate 23
+/cases give GARAKIL donat-currency 23
+/eco give GARAKIL 1
+/points
+/cases reload
+/cases give GARAKIL currency 1
+/cases give GARAKIL currency 131231
+/cases reload
+/eco give GARAKIL 100
+/p give GARAKIL 12
+/cases reload
+/eco give GARAKIL 10
+/eco give GARAKIL 1\
+/tempban vovan1224_ Пидорас шлюха 1s
+/tempban Geroin3 хахол 10s
+/CAS
+/case
+/cases
+/cases setcase 231 141 232
+/cases setcase 231141232
+/backcases setcase 231 141 232
+/backcases setcase x231 l141 z232
+/backcases setcase 231 232
+/backcases setcase x231 z232
+/backcases setcase x231z232
+/backcases setcase x231 232
+/backcases setcase 21
+/backcases setcase 214323
+/backcases setcase 214323 12312
+/backcases setcase 214323 12312 423
+/backcases setcase x231
+/cases
+/cases give GARAKIL donate 1
+/cases give GARAKIL monet 1
+/cases give GARAKIL money 1

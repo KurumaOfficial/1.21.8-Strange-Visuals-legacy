@@ -1,0 +1,53 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "ru.strange.client.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "KeyboardMixin",
+    "MouseMixin",
+    "InGameHudMixin",
+    "CreeperTextureMixin",
+    "WorldRendererMixin",
+    "GameRendererMixin",
+    "ClientPlayerInteractionManagerMixin",
+    "ClientPlayNetworkHandlerMixin",
+    "MinecraftClientMixin",
+    "ClientPlayerEntityMixin",
+    "GlyphBufferAlphaFixMixin",
+    "GlyphBufferMixin",
+    "TextColorMixin",
+    "ClientWorldPropertiesMixin",
+    "InGameOverlayRendererMixin",
+    "MinecraftClientAccessor",
+    "HandledScreenMixin",
+    "HeldItemRendererMixin",
+    "GuiRendererGpsMixin",
+    "LivingEntityMixin",
+    "LightmapTextureManagerMixin",
+    "GameMenuScreenMixin",
+    "GameMenuScreenButtonsMixin",
+    "PlayerListEntryMixin",
+    "SpiderEntityModelMixin",
+    "CameraMixin",
+    "ServerRestrictionMixin",
+    "ChatHudMixin",
+    "ChatScreenMixin",
+    "ScreenBackgroundMixin",
+    "EntityRendererMixin",
+    "FogRendererMixin",
+    "accessor.ClientWorldAccessor",
+    "accessor.LivingEntityAccessor",
+    "accessor.ChatHudAccessor",
+    "accessor.ItemCooldownManagerAccessor",
+    "accessor.ItemCooldownEntryAccessor",
+    "ItemEntityRendererMixin"
+
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

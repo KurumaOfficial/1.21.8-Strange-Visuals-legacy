@@ -1,0 +1,67 @@
+{
+	"targets": {
+		"swap": {}
+	},
+	"passes": [
+		{
+			"vertex_shader": "minecraft:post/sobel",
+			"fragment_shader": "renderer:program/gaussian_no_mask",
+			"inputs": [
+				{
+					"sampler_name": "In",
+					"target": "minecraft:main",
+					"bilinear": true
+				}
+			],
+			"output": "swap",
+			"uniforms": {
+				"Predefined": [
+					{
+						"value": [1, 0],
+						"type": "vec2"
+					}
+				],
+				"BlurConfig": [
+					{
+						"value": 0,
+						"type": "float"
+					},
+					{
+						"value": 0,
+						"type": "float"
+					}
+				]
+			}
+		},
+		{
+			"vertex_shader": "minecraft:post/sobel",
+			"fragment_shader": "renderer:program/gaussian_no_mask",
+			"inputs": [
+				{
+					"sampler_name": "In",
+					"target": "swap",
+					"bilinear": true
+				}
+			],
+			"output": "minecraft:main",
+			"uniforms": {
+				"Predefined": [
+					{
+						"value": [0, 1],
+						"type": "vec2"
+					}
+				],
+				"BlurConfig": [
+					{
+						"value": 0,
+						"type": "float"
+					},
+					{
+						"value": 0,
+						"type": "float"
+					}
+				]
+			}
+		}
+	]
+}

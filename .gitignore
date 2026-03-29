@@ -1,0 +1,8 @@
+﻿build/
+bin/
+.gradle/
+out/
+*.iml
+*.class
+logs/
+win32-x86-64/

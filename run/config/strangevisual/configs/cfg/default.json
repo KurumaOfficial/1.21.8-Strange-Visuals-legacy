@@ -1,0 +1,653 @@
+{
+  "Features": {
+    "GPS": {
+      "enable": true,
+      "keyIndex": -1,
+      "Settings": {
+        "Цвет": {
+          "current": 0.0,
+          "saturation": 0.0,
+          "brightness": 1.0
+        },
+        "Толщина": 5.0
+      }
+    },
+    "Авто бег": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {}
+    },
+    "Авто подключение (ST)": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {}
+    },
+    "Авто респавн": {
+      "enable": true,
+      "keyIndex": -1,
+      "Settings": {
+        "Координаты смерти": true
+      }
+    },
+    "Авто Свап": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Свап с": "Тотем",
+        "Свап на": "Сфера",
+        "Кнопка свапа": 71,
+        "Задержка": 150.0
+      }
+    },
+    "Аспект ратион": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Соотношение экрана": "16:9",
+        "Кастомное значение": 2.0
+      }
+    },
+    "АукХелпер": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Бинд": -1
+      }
+    },
+    "Без рендера": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Настройки": {
+          "Убрать огонь": true,
+          "Убрать тряску": true,
+          "Убрать тыкву": true,
+          "Убрать портал": true,
+          "Убрать скорборд": false
+        }
+      }
+    },
+    "Боксы": {
+      "enable": false,
+      "keyIndex": 82,
+      "Settings": {
+        "Режим": "Оба",
+        "Кого отображать": {
+          "Игроки": true,
+          "Мобы": true
+        },
+        "Style": "Default",
+        "Shader Theme": "Космос",
+        "Friend Theme": true,
+        "Friend Shader Theme": "Аврора",
+        "Цвет": {
+          "current": 64.54455,
+          "saturation": 0.43534482,
+          "brightness": 0.9098039
+        },
+        "HitColor": true,
+        "Цвет удара": {
+          "current": 0.0,
+          "saturation": 0.5686275,
+          "brightness": 1.0
+        },
+        "Дистанция": 32.0,
+        "Размер глоу": 1.0
+      }
+    },
+    "Водяной знак": {
+      "enable": true,
+      "keyIndex": -1,
+      "Settings": {
+        "Ватермарка": {
+          "Ник": true,
+          "ФПС": true,
+          "Пинг": true,
+          "Время": true,
+          "Сервер": true
+        },
+        "Элементы": {
+          "Модули": true,
+          "Таргет худ": true,
+          "Инвентарь": true,
+          "Потионы": true,
+          "Кулдауны": true,
+          "Координаты": true,
+          "Бинды": true,
+          "Редактирование": true
+        },
+        "Стиль потионов": "Список"
+      },
+      "HudLayout": {
+        "initialized": true,
+        "watermarkX": 2.0,
+        "watermarkY": 2.0,
+        "modulesX": 2.0,
+        "modulesY": 25.021759,
+        "targetX": 429.2,
+        "targetY": 293.38232,
+        "inventoryX": 786.0,
+        "inventoryY": 306.63483,
+        "potionsX": 751.5,
+        "potionsY": 35.031235,
+        "cooldownsX": 433.5,
+        "cooldownsY": 440.39624,
+        "coordsX": 2.0,
+        "coordsY": 509.0,
+        "bindsX": 257.5,
+        "bindsY": 42.039734,
+        "potionMode": 1
+      }
+    },
+    "Время суток": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Время суток": "Ночь"
+      }
+    },
+    "Гамма": {
+      "enable": true,
+      "keyIndex": -1,
+      "Settings": {
+        "Режим": "Гамма"
+      }
+    },
+    "Добавить друга": {
+      "enable": true,
+      "keyIndex": -1,
+      "Settings": {
+        "Кнопка": 1002
+      }
+    },
+    "Module Sounds": {
+      "enable": true,
+      "keyIndex": -1,
+      "Settings": {
+        "Звуки модулей": true,
+        "Профиль": "Function",
+        "Громкость": 0.65
+      }
+    },
+    "Кастомизировать руки": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Анимация": "Smooth",
+        "Скорость анимации": 1.0,
+        "Размер анимации": 3.7,
+        "Модель Руки": false,
+        "X правая": 0.0,
+        "X левая": 0.0,
+        "Y правая": 0.0,
+        "Y левая": 0.0,
+        "Z правая": 0.0,
+        "Z левая": 0.0
+      }
+    },
+    "Custom Crosshair": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Режим": "Крест",
+        "Длина линий": 6.0,
+        "Толщина линий": 2.0,
+        "Отступ от центра": 3.0,
+        "Точка в центре": false,
+        "Динамика": true,
+        "Размер точки": 4.0,
+        "Радиус": 8.0,
+        "Толщина кольца": 1.5,
+        "Точка в центре ": false,
+        "Динамика ": true,
+        "Длина скобок": 6.0,
+        "Толщина скобок": 2.0,
+        "Отступ скобок": 4.0,
+        "Точка в центре  ": false,
+        "Динамика  ": true,
+        "Прозрачность": 245.0,
+        "Обводка": true,
+        "Подсветка цели": true,
+        "Хит маркер": true,
+        "Цвет": {
+          "current": 0.0,
+          "saturation": 0.0,
+          "brightness": 1.0
+        },
+        "Цвет цели": {
+          "current": 56.989243,
+          "saturation": 0.60784316,
+          "brightness": 1.0
+        },
+        "Цвет крита": {
+          "current": 12.697916,
+          "saturation": 0.627451,
+          "brightness": 1.0
+        },
+        "Цвет хита": {
+          "current": 0.0,
+          "saturation": 0.7254902,
+          "brightness": 1.0
+        }
+      }
+    },
+    "Кастомный туман": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Цвет тумана": {
+          "current": 70.66667,
+          "saturation": 0.04761905,
+          "brightness": 0.8235294
+        }
+      }
+    },
+    "Китайская шляпа": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Цвет": "Один цвет",
+        "Shader Theme": "Космос",
+        "Цвет 1": {
+          "current": 64.54455,
+          "saturation": 0.43534482,
+          "brightness": 0.9098039
+        },
+        "Цвет 2": {
+          "current": 99.87789,
+          "saturation": 0.43534482,
+          "brightness": 0.9098039
+        },
+        "Альфа": 255.0,
+        "Сегменты": 120.0,
+        "Высота": 0.25,
+        "Ширина": 0.55,
+        "Контур": true,
+        "Толщина контура": 2.5,
+        "Вращение": true,
+        "Скорость вращения": 1.0
+      }
+    },
+    "JumpCircle": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Эффект": "Скан",
+        "Цвет": {
+          "current": 64.54455,
+          "saturation": 0.43534482,
+          "brightness": 0.9098039
+        },
+        "Акцент": {
+          "current": 0.0,
+          "saturation": 0.0,
+          "brightness": 1.0
+        },
+        "Shader Colors": false,
+        "Shader Theme": "Космос",
+        "Circle Radius": 1.0,
+        "Радиус скана": 14.0,
+        "Ширина скана": 1.4,
+        "Длительность": 1.2,
+        "Сегменты": 56.0,
+        "Волна": 0.18
+      }
+    },
+    "Кубики": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Кол кубиков": 100.0,
+        "Цвет": {
+          "current": 64.54455,
+          "saturation": 0.43534482,
+          "brightness": 0.9098039
+        }
+      }
+    },
+    "Обводка блока": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Режим": "Шейдер",
+        "Скорость": 1.0,
+        "Прозрачность": 92.0,
+        "Яркость линии": 255.0,
+        "Цвет хитбокса": {
+          "current": 0.0,
+          "saturation": 0.0,
+          "brightness": 1.0
+        },
+        "Цвет шейдера": {
+          "current": 77.0,
+          "saturation": 0.86,
+          "brightness": 0.78
+        },
+        "Плотность": 120.0,
+        "Тема шейдера": "Паутина",
+        "Pulse Alpha": 0.75
+      }
+    },
+    "Оптимизация": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Партиклы": false,
+        "Облака": false,
+        "Энтити": false,
+        "Дальность чанков": false,
+        "Симуляция": false,
+        "Тени энтити": false,
+        "VSync": false
+      }
+    },
+    "ПвП Хелпер": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Бинд на пёрл": 80,
+        "Бинд на элитру": 89
+      }
+    },
+    "Прокрутка предметов": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Скорость": 1.0
+      }
+    },
+    "Прыг кубики": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Количество": 3.0,
+        "Прыжки": true,
+        "Все сущности": true,
+        "Цвет": {
+          "current": 64.54455,
+          "saturation": 0.43534482,
+          "brightness": 0.9098039
+        },
+        "Режим цвета": "Client",
+        "Shader Colors": false,
+        "Shader Theme": "Космос"
+      }
+    },
+    "Таргет рендер": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Режим": "Картинка",
+        "Режим призраков": "Обычный",
+        "Режим кубиков": "Новый",
+        "Размер картинки": 1.5,
+        "Размер кубиков": 0.12,
+        "Количество кубиков": 24.0,
+        "Скорость спавна": 0.02,
+        "Ghost Count": 12.0,
+        "Ghost Radius": 1.0,
+        "Ghost Speed": 1.0,
+        "Ghost Path": 1.0,
+        "Цвет": {
+          "current": 64.54455,
+          "saturation": 0.43534482,
+          "brightness": 0.9098039
+        },
+        "Shader Colors": false,
+        "Shader Theme": "Космос"
+      }
+    },
+    "Тейп маус": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Задержка": 1000.0,
+        "Джиттер": 15.0,
+        "Только с ЛКМ": true,
+        "Синхрон с КД": true,
+        "Мин. КД": 0.92,
+        "Дистанция": 3.1
+      }
+    },
+    "Фейк игрок": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Бесконечный тотем": true,
+        "Копировать броню": true
+      }
+    },
+    "FakeHitboxes": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Режим": "Под прицелом",
+        "Style": "Default",
+        "Shader Theme": "Космос",
+        "Расширение": 0.28,
+        "Дистанция": 5.0,
+        "Заливка": true,
+        "Цвет": {
+          "current": 58.977448,
+          "saturation": 0.52156866,
+          "brightness": 1.0
+        },
+        "Цвет удара": {
+          "current": 0.0,
+          "saturation": 0.5294118,
+          "brightness": 1.0
+        }
+      }
+    },
+    "Физика предметов": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Размер предмета": 0.75
+      }
+    },
+    "Screen Filters": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Насыщенность": 1.0,
+        "Экспозиция": 1.0,
+        "Гамма": 1.0,
+        "Контраст": 1.0,
+        "Яркость": 0.0,
+        "Виньетка": 0.0,
+        "Зерно": 0.0,
+        "Оттенок": false,
+        "Цвет оттенка": {
+          "current": 9.8148155,
+          "saturation": 0.1764706,
+          "brightness": 1.0
+        },
+        "Сила оттенка": 0.12
+      }
+    },
+    "Фри Лук": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Кнопка": 342,
+        "Авто F5": true
+      }
+    },
+    "ФТХелпер": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Проекция Зелия": true,
+        "Цвет": {
+          "current": 6.0571423,
+          "saturation": 0.6862745,
+          "brightness": 1.0
+        },
+        "Проекция Снежка": true,
+        "Проекция Дезориентация": true,
+        "Проекция Явной пыли": true,
+        "Проекция Огненый смерчь": true
+      }
+    },
+    "Хит бабл": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Текстура": "Bubble1",
+        "Режим": "Texture",
+        "Shader Theme": "Космос",
+        "Цвет": {
+          "current": 0.0,
+          "saturation": 0.0,
+          "brightness": 1.0
+        }
+      }
+    },
+    "Хит Саунд": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Звук": "Случайный",
+        "Триггер": "Любой удар",
+        "Выбрать звук": "(нет файлов)",
+        "Громкость": 35.0
+      }
+    },
+    "Частицы Игрока": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Атака": true,
+        "Бросок": true,
+        "Стиль": "Custom",
+        "Цвет": {
+          "current": 64.54455,
+          "saturation": 0.43534482,
+          "brightness": 0.9098039
+        },
+        "Тип частиц": "Bloom",
+        "Theme Preset": "Космос",
+        "Размер": 0.5
+      }
+    },
+    "Частицы Мира": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Стиль": "Custom",
+        "Цвет": {
+          "current": 64.54455,
+          "saturation": 0.43534482,
+          "brightness": 0.9098039
+        },
+        "Тип частиц": "Bloom",
+        "Theme Preset": "Космос",
+        "Размер": 0.5
+      }
+    },
+    "Чат Хелпер": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Анти-спам": true,
+        "Сохранять историю": true
+      }
+    },
+    "Shader Hand": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Mode": "Shader",
+        "Shader Theme": "Плазма",
+        "Blur Radius": 2.5,
+        "Blur Iterations": 3.0,
+        "Saturation": 1.0,
+        "Tint": false,
+        "Tint Color": {
+          "current": 50.0,
+          "saturation": 1.0,
+          "brightness": 1.0
+        },
+        "Tint Strength": 0.1,
+        "Edge Glow": true,
+        "Edge Glow Strength": 0.3,
+        "Hand Glow": false,
+        "Hand Glow Color": {
+          "current": 60.274506,
+          "saturation": 0.33333334,
+          "brightness": 1.0
+        },
+        "Hand Glow Power": 0.45,
+        "Star Density": 28.0,
+        "Star Speed": 0.3,
+        "Shader Intensity": 0.8,
+        "Shader Color": {
+          "current": 80.0,
+          "saturation": 0.8,
+          "brightness": 0.7
+        },
+        "Shader Edge Glow": true,
+        "Shader Edge Strength": 0.5,
+        "Pulse Alpha": 0.75,
+        "Pulse Effect Only": false
+      }
+    },
+    "Шифт тап": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Тики шифта": 3.0
+      }
+    },
+    "Шлейф": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Цвет": {
+          "current": 64.54455,
+          "saturation": 0.43534482,
+          "brightness": 0.9098039
+        },
+        "Режим цвета": "Client",
+        "Shader Colors": false,
+        "Shader Theme": "Космос",
+        "Длина": 0.75,
+        "Размер": 8.0,
+        "Сглаживание": 0.2,
+        "Свечение": true,
+        "От первого лица": true
+      }
+    },
+    "Kill Effect": {
+      "enable": false,
+      "keyIndex": -1,
+      "Settings": {
+        "Убийство": "Комбо",
+        "Тотем": "Партиклы",
+        "Стиль молнии": "Кастомная",
+        "Стиль частиц": "Custom",
+        "Тип частиц": "Star",
+        "Ванильные частицы": "Totem",
+        "Shader Colors": false,
+        "Shader Theme": "Космос",
+        "JumpCircle On Kill": false,
+        "JumpCircle On Totem": false,
+        "Цвет": {
+          "current": 12.793103,
+          "saturation": 0.5686275,
+          "brightness": 1.0
+        },
+        "Частицы": 28.0,
+        "Размер": 0.55,
+        "Толщина молнии": 2.0,
+        "Радиус волны": 3.4,
+        "Ширина волны": 0.28
+      }
+    }
+  },
+  "Theme": "BLACK",
+  "Gui": {
+    "selectedCategory": "Utilities"
+  }
+}

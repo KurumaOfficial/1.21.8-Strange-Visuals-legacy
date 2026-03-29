@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "strange-visuals",
+  "version": "1.5.0",
+  "name": "Strange Visuals",
+  "description": "Custom visuals client for Strange Visuals users.",
+  "authors": ["strange"],
+  "contact": {},
+  "license": "All rights reserved.",
+  "icon": "assets/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-datagen": [
+      "ru.strange.client.StrangeDataGenerator"
+    ],
+    "client": [
+      "ru.strange.client.Strange",
+      "ru.strange.client.StarterMenu.StrangeVisualsClient"
+    ]
+  },
+  "mixins": [
+    "strange-visuals.mixins.json",
+    "renderer.mixins.json"
+  ],
+  "accessWidener": "strange.accesswidener",
+  "depends": {
+    "fabricloader": ">=0.18.4",
+    "fabric-api": "*",
+    "minecraft": "1.21.8"
+  }
+}
