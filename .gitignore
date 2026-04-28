@@ -1,0 +1,23 @@
+build/
+bin/
+.gradle/
+.idea/
+out/
+*.iml
+*.class
+logs/
+run/
+crash-reports/
+hs_err_pid*
+replay_pid*
+win32-x86-64/
+
+# Common extras
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.jar
+libs/
+.env
