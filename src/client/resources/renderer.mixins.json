@@ -1,0 +1,21 @@
+{
+	"required": true,
+	"minVersion": "0.8",
+	"package": "me.x150.renderer.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"mixins": [
+	],
+	"client": [
+		"BufferBuilderAccessor",
+		"DrawContextAccessor",
+		"GameRendererAccessor",
+		"GuiRendererMixin",
+		"MultiPhaseMixin",
+		"NativeImageAccessor",
+		"PostEffectPassAccessor",
+		"PostEffectProcessorAccessor"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

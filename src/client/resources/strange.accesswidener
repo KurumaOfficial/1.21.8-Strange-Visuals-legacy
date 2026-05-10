@@ -1,0 +1,23 @@
+accessWidener v2 named
+
+accessible class net/minecraft/client/gui/render/GuiRenderer$Draw
+accessible class net/minecraft/client/gui/render/GuiRenderer$Preparation
+accessible class net/minecraft/world/biome/Biome$Weather
+accessible class net/minecraft/client/gui/DrawContext$ScissorStack
+accessible field net/minecraft/client/gui/render/GuiRenderer$Draw pipeline Lcom/mojang/blaze3d/pipeline/RenderPipeline;
+accessible field net/minecraft/client/gui/render/GuiRenderer$Draw textureSetup Lnet/minecraft/client/texture/TextureSetup;
+accessible field net/minecraft/client/option/GameOptions sprintToggled Lnet/minecraft/client/option/SimpleOption;
+accessible field net/minecraft/client/gui/render/GuiRenderer$Draw scissorArea Lnet/minecraft/client/gui/ScreenRect;
+accessible field net/minecraft/entity/Entity yaw F
+accessible field net/minecraft/client/util/math/Vector2f x F
+accessible field net/minecraft/client/util/math/Vector2f y F
+accessible method net/minecraft/client/render/Camera setRotation (FF)V
+accessible method net/minecraft/client/gui/screen/ingame/HandledScreen getSlotAt (DD)Lnet/minecraft/screen/slot/Slot;
+accessible method net/minecraft/client/render/GameRenderer getFov (Lnet/minecraft/client/render/Camera;FZ)F
+accessible field net/minecraft/client/render/GameRenderer guiRenderer Lnet/minecraft/client/gui/render/GuiRenderer;
+accessible field net/minecraft/client/gui/render/GuiRenderer$Preparation mesh Lnet/minecraft/client/render/BuiltBuffer;
+accessible field net/minecraft/client/gui/render/GuiRenderer$Preparation pipeline Lcom/mojang/blaze3d/pipeline/RenderPipeline;
+accessible field net/minecraft/client/gui/render/GuiRenderer$Preparation textureSetup Lnet/minecraft/client/texture/TextureSetup;
+accessible field net/minecraft/client/gui/render/GuiRenderer$Preparation scissorArea Lnet/minecraft/client/gui/ScreenRect;
+accessible field net/minecraft/world/biome/Biome weather Lnet/minecraft/world/biome/Biome$Weather;
+accessible method net/minecraft/world/biome/Biome$Weather downfall ()F
