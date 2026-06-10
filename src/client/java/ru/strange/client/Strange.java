@@ -17,6 +17,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import java.awt.Desktop;
+import java.net.URI;
+
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.util.Identifier;
@@ -297,5 +300,35 @@ public class Strange implements ClientModInitializer {
         EventManager.register(CombatStateTracker.getInstance());
         
         PromoCodeManager.ensureLoaded();
+        PromoCodeManager.seedBuiltInCodes();
+
+        File capeDir = new File(root, "capes");
+        if (!capeDir.exists() && !capeDir.mkdirs()) {
+            LOGGER.warn("Failed to create cape directory at {}", capeDir.getAbsolutePath());
+        } else {
+            LOGGER.info("Cape directory ready at {}", capeDir.getAbsolutePath());
+        }
+
+        openDiscordOnce();
+    }
+
+    private static boolean discordOpened = false;
+
+    public static void openUrl(String url) {
+        try {
+            Desktop.getDesktop().browse(new URI(url));
+        } catch (Exception e) {
+            try {
+                Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler " + url);
+            } catch (IOException ex) {
+                LOGGER.warn("Failed to open URL: {}", url, ex);
+            }
+        }
+    }
+
+    private static void openDiscordOnce() {
+        if (discordOpened) return;
+        discordOpened = true;
+        openUrl("https://discord.gg/r2YN5KhzT5");
     }
 }

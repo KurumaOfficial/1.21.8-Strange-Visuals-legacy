@@ -13,6 +13,7 @@
   "gui.theme.transparent_black": "Glass Black",
   "gui.theme.pink": "Rose",
   "gui.theme.purple": "Purple",
+  "gui.theme.neon": "Neon",
   "gui.status.enabled": "ENABLED",
   "gui.status.disabled": "DISABLED",
   "gui.list.empty": "Empty",

@@ -325,7 +325,7 @@ public class NewGuiMouseHandler {
     public static boolean mouseScrolled(double mouseX, double mouseY, double amount, int screenWidth, int screenHeight) {
         if (NewGuiState.themeDropdownOpened) {
             float boxWidth = 100f;
-            float boxX = NewGuiState.currentScreenWidth - boxWidth - 10f;
+            float boxX = 10f;
             float boxY = NewGuiState.getThemeBarY();
 
             Theme[] themes = Theme.values();
@@ -449,9 +449,7 @@ public class NewGuiMouseHandler {
         // РђРЅРёРјРёСЂРѕРІР°РЅРЅР°СЏ С€С‚РѕСЂРєР° Р’Р’Р•Р РҐ СЃ РѕРіСЂР°РЅРёС‡РµРЅРёРµРј РІС‹СЃРѕС‚С‹
         if (NewGuiState.themeDropdownAnimation > 0.01f) {
             float optionHeight = 20f;
-            int maxVisible = 5; // РЎРєРѕР»СЊРєРѕ С‚РµРј РїРѕРєР°Р·С‹РІР°С‚СЊ РѕРґРЅРѕРІСЂРµРјРµРЅРЅРѕ
-            int visibleCount = Math.min(themes.length, maxVisible);
-            float targetDropdownHeight = visibleCount * optionHeight + 4f;
+            float targetDropdownHeight = themes.length * optionHeight + 8f;
 
             float animatedDropdownHeight = targetDropdownHeight * easeOutQuart(NewGuiState.themeDropdownAnimation);
             float dropdownY = boxY - animatedDropdownHeight + 4f;

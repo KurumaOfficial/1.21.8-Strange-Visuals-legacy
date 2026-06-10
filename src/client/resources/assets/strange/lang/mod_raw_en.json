@@ -575,6 +575,8 @@
     "Светлячки вокруг игрока": "Fireflies around player",
     "Skeleton ESP": "Skeleton ESP",
     "Скелетный ESP по сущностям": "Skeleton ESP for entities",
+    "Totem Pop Counter": "Totem Pop Counter",
+    "Считает срабатывания тотемов у противников": "Counts opponent totem pops",
     "Cursor Particles": "Cursor Particles",
     "Частицы от курсора в меню и чате": "Cursor particles in menus and chat",
     "Лимит": "Limit",
@@ -694,5 +696,8 @@
     "Включено": "Enabled",
     "Броня": "Armor",
     "Хотбар": "Hotbar",
-    "Скорборд": "Scoreboard"
+    "Скорборд": "Scoreboard",
+    "Питомцы": "Pets",
+    "Плащи": "Capes",
+    "Убрать блок-оверлей": "Hide Block Overlay"
 }

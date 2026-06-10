@@ -1,7 +1,5 @@
 package ru.strange.client.ui.clickgui.newstyle;
 
-// BoxingHarmoni: Strenge Visual GUI implementation
-
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.util.Identifier;
 import ru.strange.client.Strange;
@@ -55,7 +53,7 @@ public class NewGuiRender {
             }
         }
 
-        NewGuiState.searchAnimation = lerp(NewGuiState.searchAnimation, NewGuiState.searchFocused ? 1f : 0f, 0.16f);
+        NewGuiState.searchAnimation = lerp(NewGuiState.searchAnimation, 1f, 0.16f);
         NewGuiState.searchAppendAnimation = lerp(NewGuiState.searchAppendAnimation,
             NewGuiState.searchQuery.isBlank() ? 0f : 1f, 0.16f);
 
@@ -66,9 +64,10 @@ public class NewGuiRender {
         boolean searchCursorVisible = ((now / 450L) & 1L) == 0L;
         boolean textCursorVisible = (now % 1000L) >= 500L;
 
-        // Per-panel staggered animation: center panel (index 2) first, then neighbors (1,3), then outer (0,4)
+        // Per-panel staggered animation: center panels first, then outward
         for (int i = 0; i < NewGuiState.CATEGORIES.length; i++) {
-            float centerDist = Math.abs(i - 2); // 0 for center, 1 for adjacent, 2 for outer
+            float center = (NewGuiState.CATEGORIES.length - 1) / 2f;
+            float centerDist = Math.abs(i - center);
 
             if (!NewGuiState.closing) {
                 // Opening: stagger from center outward with smoother easing
@@ -77,7 +76,8 @@ public class NewGuiRender {
                 NewGuiState.panelSizing[i] = easeOutQuart(localRaw);
             } else {
                 // Closing: stagger from outer inward with smoother easing
-                float staggerDelay = (2f - centerDist) * 0.10f;
+                float maxCenterDist = (NewGuiState.CATEGORIES.length - 1) / 2f;
+                float staggerDelay = (maxCenterDist - centerDist) * 0.10f;
                 float closeProgress = 1f - NewGuiState.openAnimation; // 0→1 as closing progresses
                 float localRaw = Math.max(0f, Math.min(1f, (closeProgress - staggerDelay) / (1f - staggerDelay)));
                 NewGuiState.panelSizing[i] = 1f - easeOutQuart(localRaw);
@@ -126,7 +126,13 @@ public class NewGuiRender {
         renderSearch(ctx, anim, dark, searchCursorVisible);
         renderLanguageSwitch(ctx, mouseX, mouseY, anim, dark);
 
-        // -- BoxingHarmoni --
+        if (currentTheme == Theme.NEON && anim > 0.1f) {
+            int bhColor = RenderUtil.ColorUtil.replAlpha(0xFFB388FF, (int)(anim * 255 * 0.015f));
+            FontDraw.drawCenter(FontDraw.FontType.SEMIBOLD, ctx, "BH",
+                screenWidth / 2f, screenHeight / 2f - 40f, 80, bhColor, false);
+        }
+
+        
         renderPromoSection(ctx, mouseX, mouseY, anim, dark, textCursorVisible);
         renderBranding(ctx, anim, screenWidth, screenHeight);
     }
@@ -136,9 +142,8 @@ public class NewGuiRender {
         int color1 = RenderUtil.ColorUtil.replAlpha(RenderUtil.ColorUtil.getTextColor(1, 1), (int)(anim * 180));
         int color2 = RenderUtil.ColorUtil.replAlpha(RenderUtil.ColorUtil.getTextColor(1, 1), (int)(anim * 110));
 
-        float y = screenHeight - 25f;
-        FontDraw.drawCenter(FontDraw.FontType.SEMIBOLD, ctx, "Strenge Visual", screenWidth / 2f, y, 9, color1, false);
-        FontDraw.drawCenter(FontDraw.FontType.MEDIUM, ctx, "BoxingHarmoni", screenWidth / 2f, y + 10f, 7, color2, false);
+        float y = screenHeight - 42f;
+        FontDraw.drawCenter(FontDraw.FontType.SEMIBOLD, ctx, "Strange Visual", screenWidth / 2f, y, 9, color1, false);
     }
 
     private static void renderPromoSection(DrawContext ctx, int mouseX, int mouseY, float anim, boolean dark, boolean cursorVisible) {
@@ -193,7 +198,7 @@ public class NewGuiRender {
         float searchW = NewGuiState.SEARCH_WIDTH;
         float searchH = NewGuiState.SEARCH_HEIGHT;
         float searchTextH = FontDraw.getHeight(FontDraw.FontType.MEDIUM, 7);
-        float searchTextY = centeredTextY(searchY, searchH, FontDraw.FontType.MEDIUM, 7) - 2.5f;
+        float searchTextY = centeredTextY(searchY, searchH, FontDraw.FontType.MEDIUM, 7) - 0.5f;
         float textStartX = searchX + 10f;
 
         if (searchAlpha > 0.01f) {
@@ -215,24 +220,17 @@ public class NewGuiRender {
             }
 
              float appendAlpha = anim * NewGuiState.searchAppendAnimation;
-             if (appendAlpha > 0.01f) {
+             if (appendAlpha > 0.01f && NewGuiState.searchFocused) {
                  int hintColor = RenderUtil.ColorUtil.replAlpha(RenderUtil.ColorUtil.getTextColor(1, 1), (int) (120 * appendAlpha));
-                 float hintBaseY = NewGuiState.getThemeBarY() - 18f;
+                 float hintBaseY = searchY + searchH + 8f;
                  FontDraw.drawCenter(FontDraw.FontType.MEDIUM, ctx, text("TAB или Ctrl+F - поиск", "TAB or Ctrl+F - search"),
                      NewGuiState.currentScreenWidth / 2f, hintBaseY, 7, hintColor, false);
                  FontDraw.drawCenter(FontDraw.FontType.MEDIUM, ctx, text("Enter - закрыть поиск", "Enter - close search"),
                      NewGuiState.currentScreenWidth / 2f, hintBaseY + 10f, 7, hintColor, false);
-                 FontDraw.drawCenter(FontDraw.FontType.MEDIUM, ctx, text("Ctrl+←/→ - смена GUI", "Ctrl+←/→ - switch GUI"),
-                     NewGuiState.currentScreenWidth / 2f, hintBaseY + 20f, 7, hintColor, false);
-                 FontDraw.drawCenter(FontDraw.FontType.MEDIUM, ctx, text("Alt+ЛКМ - перемещение HUD", "Alt+LMB - move HUD"),
-                     NewGuiState.currentScreenWidth / 2f, hintBaseY + 30f, 7, hintColor, false);
-             }
+                  FontDraw.drawCenter(FontDraw.FontType.MEDIUM, ctx, text("Ctrl+←/→ - смена GUI", "Ctrl+Left/Right - switch GUI"),
+                      NewGuiState.currentScreenWidth / 2f, hintBaseY + 20f, 7, hintColor, false);
+              }
             return;
-        } else {
-            // Clear search when not focused (ported from DropDownScreen: searchField.clear())
-            if (!NewGuiState.searchQuery.isBlank()) {
-                NewGuiState.searchQuery = "";
-            }
         }
 
          // Tooltip always visible at bottom when search not focused
@@ -242,10 +240,8 @@ public class NewGuiRender {
              float tooltipY = NewGuiState.currentScreenHeight - 12f;
              FontDraw.drawCenter(FontDraw.FontType.MEDIUM, ctx, text("TAB или Ctrl+F - поиск", "TAB or Ctrl+F - search"),
                  NewGuiState.currentScreenWidth / 2f, tooltipY, 7, tooltipColor, false);
-             FontDraw.drawCenter(FontDraw.FontType.MEDIUM, ctx, text("Ctrl+←/→ - смена GUI", "Ctrl+←/→ - switch GUI"),
+             FontDraw.drawCenter(FontDraw.FontType.MEDIUM, ctx, text("Ctrl+←/→ - смена GUI", "Ctrl+Left/Right - switch GUI"),
                  NewGuiState.currentScreenWidth / 2f, tooltipY + 10f, 7, tooltipColor, false);
-             FontDraw.drawCenter(FontDraw.FontType.MEDIUM, ctx, text("Alt+ЛКМ - перемещение HUD", "Alt+LMB - move HUD"),
-                 NewGuiState.currentScreenWidth / 2f, tooltipY + 20f, 7, tooltipColor, false);
          }
     }
 
@@ -848,7 +844,6 @@ public class NewGuiRender {
             case Other -> OTHER_ICON;
             case Interface -> INTERFACE_ICON;
             case Theme -> THEME_ICON;
-            case Combat -> OTHER_ICON;
         };
     }
 
@@ -857,12 +852,14 @@ public class NewGuiRender {
         float clamped = Math.max(0f, Math.min(1f, alpha));
         Theme theme = ThemeManager.getTheme();
         boolean transparent = theme == Theme.TRANSPARENT_BLACK || theme == Theme.TRANSPARENT_WHITE;
-        // Alpha from theme: BLACK=0.9, WHITE=0.7, TRANSPARENT=0.6, PINK/PURPLE=0.7
+        // Alpha from theme: BLACK=0.9, WHITE=0.7, TRANSPARENT=0.6, PINK/PURPLE=0.7, NEON=0.85
         float baseAlpha;
         if (transparent) {
             baseAlpha = 0.6f;
         } else if (theme == Theme.PINK || theme == Theme.PURPLE) {
             baseAlpha = 0.7f;
+        } else if (theme == Theme.NEON) {
+            baseAlpha = 0.85f;
         } else {
             baseAlpha = dark ? 0.9f : 0.7f;
         }
@@ -976,6 +973,12 @@ public class NewGuiRender {
             int moduleBg = RenderUtil.ColorUtil.replAlpha(RenderUtil.ColorUtil.getBackGroundColor(1, 1), (int)(moduleAlpha * 180));
             RenderUtil.Round.draw(ctx, panelX + 4f, moduleY, NewGuiState.PANEL_WIDTH - 8f, moduleHeight, 4f, moduleBg);
 
+            // Search highlight accent bar
+            if (!NewGuiState.searchQuery.isBlank()) {
+                int accentColor = themeAccentColor((int)(anim * 200));
+                RenderUtil.Round.draw(ctx, panelX + 4f, moduleY + 3f, 2.5f, moduleHeight - 6f, 1.5f, accentColor);
+            }
+
             // Module name
             int nameColor = RenderUtil.ColorUtil.replAlpha(RenderUtil.ColorUtil.getTextColor(1, 1), (int)(anim * (220 + 35 * enableAnim)));
             String moduleName = module.binding ? module.getDisplayName() : module.getLocalizedName();
@@ -986,19 +989,29 @@ public class NewGuiRender {
                 }
             }
             // Truncate module name if too long
-            float maxNameWidth = NewGuiState.PANEL_WIDTH - 30f;
+            boolean hasSettings = !module.getSettingsForGUI().isEmpty();
+            float maxNameWidth = hasSettings ? NewGuiState.PANEL_WIDTH - 36f : NewGuiState.PANEL_WIDTH - 30f;
             float nameWidth = FontDraw.getWidth(FontDraw.FontType.MEDIUM, moduleName, 7);
             if (nameWidth > maxNameWidth) {
                 moduleName = truncateText(moduleName, FontDraw.FontType.MEDIUM, 7, maxNameWidth);
             }
-            FontDraw.drawText(FontDraw.FontType.MEDIUM, ctx, moduleName, panelX + 12f,
+            FontDraw.drawCenter(FontDraw.FontType.MEDIUM, ctx, moduleName, panelX + NewGuiState.PANEL_WIDTH / 2f,
                     centeredTextY(moduleY, moduleHeight, FontDraw.FontType.MEDIUM, 7) - 0.5f,
-                    7, nameColor);
+                    7, nameColor, false);
 
             // Enable indicator
             if (enableAnim > 0.01f) {
                 int indicatorColor = themeAccentColor((int)(enableAnim * anim * 255));
                 RenderUtil.Round.draw(ctx, panelX + NewGuiState.PANEL_WIDTH - 14f, moduleY + 6f, 6f, 6f, 3f, indicatorColor);
+            }
+
+            // Settings arrow indicator
+            if (!module.getSettingsForGUI().isEmpty()) {
+                int arrowColor = RenderUtil.ColorUtil.replAlpha(RenderUtil.ColorUtil.getTextColor(1, 1), (int)(anim * 140));
+                float arrowX = panelX + NewGuiState.PANEL_WIDTH - 22f;
+                float arrowY = moduleY + 8f;
+                RenderUtil.Rect.draw(ctx, arrowX, arrowY, 4f, 1.2f, arrowColor);
+                RenderUtil.Rect.draw(ctx, arrowX + 1f, arrowY + 1.5f, 3f, 1.2f, arrowColor);
             }
 
             moduleY += moduleHeight + 2f;
@@ -1136,7 +1149,7 @@ public class NewGuiRender {
         Theme[] themes = Theme.values();
         float boxWidth = 100f;
         float boxHeight = 20f;
-        float boxX = screenWidth - boxWidth - 10f;
+        float boxX = NewGuiState.currentScreenWidth - boxWidth - 10f;
         float boxY = NewGuiState.getThemeBarY();
 
         Theme currentTheme = ThemeManager.getTheme();
@@ -1150,7 +1163,8 @@ public class NewGuiRender {
         // Текст текущей темы
         int textColor = RenderUtil.ColorUtil.replAlpha(RenderUtil.ColorUtil.getTextColor(1, 1), (int)(anim * 220));
         String themeName = currentTheme.getName();
-        FontDraw.drawText(FontDraw.FontType.MEDIUM, ctx, themeName, boxX + 8f, boxY + 6f, 7, textColor);
+        FontDraw.drawText(FontDraw.FontType.MEDIUM, ctx, themeName, boxX + 8f,
+                centeredTextY(boxY, boxHeight, FontDraw.FontType.MEDIUM, 7) - 0.5f, 7, textColor);
 
         // Иконка "стрелочка"
         float arrowX = boxX + boxWidth - 16f;
@@ -1161,9 +1175,9 @@ public class NewGuiRender {
         // Рендер шторки со скроллом
         if (NewGuiState.themeDropdownAnimation > 0.01f) {
             float optionHeight = 20f;
-            int maxVisible = 5; // Лимит видимых тем
+            int maxVisible = Math.min(themes.length, 6);
             int visibleCount = Math.min(themes.length, maxVisible);
-            float targetDropdownHeight = visibleCount * optionHeight + 4f;
+            float targetDropdownHeight = themes.length * optionHeight + 8f;
 
             float animatedDropdownHeight = targetDropdownHeight * easeOutQuart(NewGuiState.themeDropdownAnimation);
             float dropdownY = boxY - animatedDropdownHeight + 4f;
@@ -1173,6 +1187,8 @@ public class NewGuiRender {
                     (int)(anim * 200)
             );
             RenderUtil.Round.draw(ctx, boxX, dropdownY, boxWidth, animatedDropdownHeight, 4f, dropdownBg);
+
+            ctx.enableScissor((int) boxX, (int) dropdownY, (int) (boxX + boxWidth), (int) (dropdownY + animatedDropdownHeight));
 
             // Настройка лимитов скролла
             float totalContentHeight = themes.length * optionHeight;
@@ -1218,7 +1234,7 @@ public class NewGuiRender {
                 }
 
                 // Простая проверка видимости для текста
-                float textY = optionY + 6f;
+                float textY = centeredTextY(optionY, optionHeight, FontDraw.FontType.MEDIUM, 7) - 0.5f;
                 if (textY >= clipStartY - 2f && textY + 7f <= clipEndY + 2f) {
                     int optionTextColor = RenderUtil.ColorUtil.replAlpha(
                             RenderUtil.ColorUtil.getTextColor(1, 1),
@@ -1227,6 +1243,8 @@ public class NewGuiRender {
                     FontDraw.drawText(FontDraw.FontType.MEDIUM, ctx, theme.getName(), boxX + 8f, textY, 7, optionTextColor);
                 }
             }
+
+            ctx.disableScissor();
         }
     }
 }

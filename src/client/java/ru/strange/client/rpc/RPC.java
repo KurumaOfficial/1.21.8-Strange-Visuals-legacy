@@ -1,13 +1,14 @@
 package ru.strange.client.rpc;
 
+import net.minecraft.client.MinecraftClient;
 import ru.strange.client.Strange;
 import ru.strange.client.utils.Helper;
 
 public class RPC implements Helper {
-    private static final String APPLICATION_ID = "1482479004177924197";
+    private static final String APPLICATION_ID = "1511674361118064640";
     /** Asset key uploaded in the Discord Developer Portal for this application. */
     private static final String LARGE_IMAGE_KEY = "strange_logo";
-    private static final String DISCORD_INVITE = "https://discord.gg/hpXNAADfmk";
+    private static final String DISCORD_INVITE = "https://discord.gg/veePBec9Cn";
     private static final long UPDATE_INTERVAL_MS = 2000L;
 
     public static final DiscordRichPresence presence = new DiscordRichPresence();
@@ -115,8 +116,10 @@ public class RPC implements Helper {
     }
 
     private static void updatePresenceFields() {
-        presence.details = "Version " + Strange.getDisplayVersion();
-        presence.state = "Playing Minecraft 1.21.8";
+        MinecraftClient client = MinecraftClient.getInstance();
+        String playerName = client.getSession() != null ? client.getSession().getUsername() : "Unknown";
+        presence.details = playerName + " | Strange Visuals " + Strange.getDisplayVersion();
+        presence.state = "Strange Visual";
         presence.largeImageText = Strange.name;
         presence.largeImageKey = LARGE_IMAGE_KEY;
         presence.smallImageKey = "";

@@ -95,7 +95,8 @@ public class GuiClient extends Screen implements Helper {
             context.getMatrices().translate(anchorX, anchorY);
             context.getMatrices().scale(scale, scale);
             context.getMatrices().translate(-anchorX, -anchorY);
-            GuiRender.renderGui(context, mouseX, mouseY, deltaTicks);
+            double[] layoutMouse = layoutMouse(mouseX, mouseY);
+            GuiRender.renderGui(context, (int)layoutMouse[0], (int)layoutMouse[1], deltaTicks);
             context.getMatrices().popMatrix();
 
             // Fade overlay: black/transparent rect over the panel area to fake alpha.
@@ -135,7 +136,7 @@ public class GuiClient extends Screen implements Helper {
             return true;
         }
 
-        if (GuiScreen.searchActive) {
+        if (GuiScreen.searchActive && !GuiScreen.isHovered(mouseX, mouseY, searchX, searchY, searchWidth, searchHeight)) {
             GuiScreen.searchActive = false;
         }
 
@@ -193,25 +194,43 @@ public class GuiClient extends Screen implements Helper {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // Ctrl+Left/Right Arrow to switch GUI style
         if (hasControlDown()) {
             if (keyCode == GLFW.GLFW_KEY_LEFT || keyCode == GLFW.GLFW_KEY_RIGHT) {
                 ru.strange.client.module.impl.interfaces.ClickGui clickGui = ru.strange.client.module.impl.interfaces.ClickGui.getInstance();
                 if (clickGui != null) {
                     boolean isNew = clickGui.isNewStyle();
                     clickGui.guiStyle.setMode(isNew ? clickGui.STYLE_CLASSIC : clickGui.STYLE_NEW);
-                    // Reopen GUI with new style
                     close();
-                    mc.setScreen(new GuiClient());
+                    if (clickGui.isNewStyle()) {
+                        mc.setScreen(new ru.strange.client.ui.clickgui.newstyle.NewGuiClient());
+                    } else {
+                        mc.setScreen(new GuiClient());
+                    }
                     return true;
                 }
             }
         }
 
+        if (hasControlDown() && keyCode == GLFW.GLFW_KEY_F) {
+            GuiScreen.searchActive = true;
+            return true;
+        }
+        if (keyCode == GLFW.GLFW_KEY_TAB && !hasShiftDown()) {
+            GuiScreen.searchActive = true;
+            return true;
+        }
+
         if (GuiScreen.searchActive) {
-            if (keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+                if (!GuiScreen.searchQuery.isEmpty()) {
+                    GuiScreen.searchQuery = "";
+                } else {
+                    GuiScreen.searchActive = false;
+                }
+                return true;
+            }
+            if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
                 GuiScreen.searchActive = false;
-                GuiScreen.searchQuery = "";
                 return true;
             }
             if (keyCode == GLFW.GLFW_KEY_BACKSPACE) {

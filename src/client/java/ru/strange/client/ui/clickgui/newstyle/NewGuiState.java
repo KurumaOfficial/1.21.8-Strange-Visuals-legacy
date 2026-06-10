@@ -10,6 +10,7 @@ import ru.strange.client.module.api.setting.Setting;
 import ru.strange.client.module.api.setting.impl.*;
 import ru.strange.client.ui.clickgui.GuiMouseUtil;
 import ru.strange.client.utils.math.ScrollUtil;
+import ru.strange.client.localization.ModLocalization;
 import ru.strange.client.utils.other.ModuleVisibilityUtil;
 
 import java.util.ArrayList;
@@ -26,13 +27,13 @@ public class NewGuiState {
             Category.Player, Category.World, Category.Utilities, Category.Other, Category.Interface
     };
 
-    public static final float PANEL_WIDTH = 115f;
+    public static final float PANEL_WIDTH = 125f;
     public static final float PANEL_HEIGHT = 240f;
-    public static final float PANEL_SPACING = 10f;
+    public static final float PANEL_SPACING = 14f;
      public static final float HEADER_HEIGHT = 28f;
     public static final float MODULE_HEIGHT = 20f;
     public static final float SEPARATOR_HEIGHT = 4f;
-    public static final float SEARCH_WIDTH = 100f;
+    public static final float SEARCH_WIDTH = 160f;
     public static final float SEARCH_HEIGHT = 20f;
     public static final float SEARCH_MARGIN_BOTTOM = 20f;
 
@@ -119,16 +120,16 @@ public class NewGuiState {
     private static final float MAX_DT = 1.0f / 15.0f;
     private static final float BASE_FPS = 165.0f;
 
-    public static final float[] panelX = new float[5];
-    public static final float[] panelY = new float[5];
+    public static final float[] panelX = new float[CATEGORIES.length];
+    public static final float[] panelY = new float[CATEGORIES.length];
 
-    public static final ScrollUtil[] modulesScroll = new ScrollUtil[5];
-    public static final ScrollUtil[] settingsScroll = new ScrollUtil[5];
+    public static final ScrollUtil[] modulesScroll = new ScrollUtil[CATEGORIES.length];
+    public static final ScrollUtil[] settingsScroll = new ScrollUtil[CATEGORIES.length];
 
-    public static final Module[] selectedModule = new Module[5];
-    public static final Module[] lastSelectedModule = new Module[5];
+    public static final Module[] selectedModule = new Module[CATEGORIES.length];
+    public static final Module[] lastSelectedModule = new Module[CATEGORIES.length];
 
-    public static final float[] swapAnimation = new float[5];
+    public static final float[] swapAnimation = new float[CATEGORIES.length];
 
     public static final Map<Module, Float> hoverAnimations = new HashMap<>();
     public static final Map<Module, Float> enableAnimations = new HashMap<>();
@@ -140,7 +141,7 @@ public class NewGuiState {
     public static final Map<Theme, Float> themeHoverAnimations = new HashMap<>();
     public static final Map<Theme, Float> themeSelectAnimations = new HashMap<>();
 
-    public static final float[] panelSizing = new float[5];
+    public static final float[] panelSizing = new float[CATEGORIES.length];
 
     public static String hoveredDescription = "";
     public static float descriptionAlpha = 0f;
@@ -151,7 +152,7 @@ public class NewGuiState {
     public static float searchAnimation = 0f;
     public static float searchAppendAnimation = 0f;
 
-    // -- BoxingHarmoni: promo code section state --
+    // promo
     public static String promoInputText = "";
     public static String promoMessage = "";
     public static boolean promoMessageAccepted = false;
@@ -240,6 +241,9 @@ public class NewGuiState {
     public static List<Module> getVisibleModules(Category category) {
         long now = System.currentTimeMillis();
         boolean searchChanged = !searchQuery.equals(lastCachedSearchQuery);
+        if (searchChanged) {
+            visibleModulesCache.clear();
+        }
         boolean expired = now - lastModuleCacheTime > MODULE_CACHE_INTERVAL_MS;
         if (searchChanged || expired || !visibleModulesCache.containsKey(category)) {
             List<Module> result = new ArrayList<>();
@@ -272,29 +276,29 @@ public class NewGuiState {
     }
 
     public static boolean matchesSearch(Module module) {
+        if (!ModuleVisibilityUtil.shouldShow(module)) {
+            return false;
+        }
         String query = normalizeSearch(searchQuery);
         if (query.isEmpty()) {
             return true;
         }
         return containsQuery(module.name, query)
                 || containsQuery(module.getLocalizedName(), query)
+                || containsQuery(ModLocalization.rawEnglish(module.name), query)
                 || containsQuery(module.description, query)
-                || containsQuery(module.getLocalizedDescription(), query);
+                || containsQuery(module.getLocalizedDescription(), query)
+                || containsQuery(ModLocalization.rawEnglish(module.description), query);
     }
 
     public static float getSearchX() {
-        float totalWidth = CATEGORIES.length * PANEL_WIDTH
-                + (CATEGORIES.length - 1) * PANEL_SPACING;
-
-        float startX = (currentScreenWidth - totalWidth) / 2f;
-
-        return startX + (totalWidth - SEARCH_WIDTH) / 2f;
+        return (currentScreenWidth - SEARCH_WIDTH) / 2f;
     }
 
     public static float getSearchY() {
-        float centerPanelY = panelY[0];
-
-        return centerPanelY + PANEL_HEIGHT + 6f; // 5–7px gap
+        float centerPanelY = panelY[2];
+        if (centerPanelY == 0) centerPanelY = (currentScreenHeight - PANEL_HEIGHT) / 2f;
+        return centerPanelY + PANEL_HEIGHT + 12f;
     }
 
     public static float getThemeBarY() {
@@ -437,7 +441,6 @@ public class NewGuiState {
         languageSelectionAnimation = 0f;
         languageSelectionInitialized = false;
         themeDropdownOpened = false;
-        // -- BoxingHarmoni --
         promoInputText = "";
         promoMessage = "";
         promoMessageAlpha = 0f;

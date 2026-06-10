@@ -42,7 +42,7 @@ public class NewGuiClient extends Screen implements Helper {
         float dt60 = NewGuiState.deltaSeconds * 60.0f;
 
         if (NewGuiState.closing) {
-            NewGuiState.openAnimation = Math.max(0f, NewGuiState.openAnimation - 0.055f * dt60);
+            NewGuiState.openAnimation = Math.max(0f, NewGuiState.openAnimation - 0.035f * dt60);
             if (NewGuiState.openAnimation <= 0.001f) {
                 NewGuiState.closing = false;
                 NewGuiState.resetInteractionState();
@@ -102,9 +102,12 @@ public class NewGuiClient extends Screen implements Helper {
                 if (clickGui != null) {
                     boolean isNew = clickGui.isNewStyle();
                     clickGui.guiStyle.setMode(isNew ? clickGui.STYLE_CLASSIC : clickGui.STYLE_NEW);
-                    // Reopen GUI with new style
                     close();
-                    mc.setScreen(new ru.strange.client.ui.clickgui.GuiClient());
+                    if (clickGui.isNewStyle()) {
+                        mc.setScreen(new NewGuiClient());
+                    } else {
+                        mc.setScreen(new ru.strange.client.ui.clickgui.GuiClient());
+                    }
                     return true;
                 }
             }

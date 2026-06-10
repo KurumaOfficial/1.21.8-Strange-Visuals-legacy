@@ -51,12 +51,16 @@ public class GuiRenderBackGround extends GuiScreen {
             ? RenderUtil.ColorUtil.replAlpha(RenderUtil.ColorUtil.getTextColor(1, 1), 127)
             : RenderUtil.ColorUtil.replAlpha(RenderUtil.ColorUtil.getTextColor(1, 1), 255);
         
-        FontDraw.drawText(FontDraw.FontType.MEDIUM, ctx, searchText, searchX + 8, searchY + 6, 6, textColor);
+        FontDraw.drawText(FontDraw.FontType.MEDIUM, ctx, searchText, searchX + 8,
+                searchY + (searchHeight - FontDraw.getHeight(FontDraw.FontType.MEDIUM, 6)) / 2f
+                        + FontDraw.getAscent(FontDraw.FontType.MEDIUM, 6),
+                6, textColor);
 
         // Курсор при активном поиске
         if (GuiScreen.searchActive) {
             float cursorX = searchX + 8 + FontDraw.getWidth(FontDraw.FontType.MEDIUM, searchText, 6);
-            RenderUtil.Rect.draw(ctx, cursorX, searchY + 6, 1, 10, textColor);
+            float cursorTop = searchY + 5f;
+            RenderUtil.Rect.draw(ctx, cursorX, cursorTop, 1, searchHeight - 10, textColor);
         }
     }
 }
